@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset Your Password - FarmLelo</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f6f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #24312A;">
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f6f8; padding: 40px 15px;">
+    <tr>
+      <td align="center">
+        <!-- Main Card -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 540px; background-color: #ffffff; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); overflow: hidden; border: 1px solid #E2DBD0;">
+          
+          <!-- Header Banner -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #24312A 0%, #24312A 100%); padding: 32px 36px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">
+                Farm<span style="color: #C9A227;">Lelo</span>
+              </h1>
+              <p style="margin: 6px 0 0; color: #94a3b8; font-size: 13px; letter-spacing: 0.5px; text-transform: uppercase;">
+                Account Security Center
+              </p>
+            </td>
+          </tr>
+
+          <!-- Body Content -->
+          <tr>
+            <td style="padding: 36px 36px 28px;">
+              <h2 style="margin: 0 0 12px; font-size: 20px; font-weight: 800; color: #24312A;">
+                Password Recovery Verification
+              </h2>
+              <p style="margin: 0 0 18px; font-size: 14.5px; line-height: 1.6; color: #475569;">
+                Hello <strong><?= htmlspecialchars($userName ?? 'User') ?></strong>,
+              </p>
+              <p style="margin: 0 0 20px; font-size: 14.5px; line-height: 1.6; color: #475569;">
+                We received a request to reset your FarmLelo account password. Please use the 6-digit verification code below to confirm your request and set a new password.
+              </p>
+
+              <!-- OTP Code Display Box -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 28px 0;">
+                <tr>
+                  <td align="center" style="background-color: #F7F3EA; border: 2px dashed #173C2D; border-radius: 16px; padding: 24px 20px;">
+                    <span style="display: block; font-size: 11px; font-weight: 800; color: #173C2D; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">
+                      Verification Code
+                    </span>
+                    <span style="display: block; font-size: 38px; font-weight: 900; letter-spacing: 8px; color: #24312A; font-family: 'Courier New', Courier, monospace;">
+                      <?= htmlspecialchars($otp ?? '000000') ?>
+                    </span>
+                    <span style="display: block; font-size: 12px; color: #57685F; margin-top: 8px;">
+                      ⏱️ This code expires in <strong><?= htmlspecialchars($expires ?? '10 minutes') ?></strong>
+                    </span>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Steps Info -->
+              <div style="background-color: #f1f5f9; padding: 16px 20px; border-radius: 12px; margin: 20px 0;">
+                <p style="margin: 0 0 6px; font-size: 13px; font-weight: 700; color: #334155;">
+                  Next Steps:
+                </p>
+                <ol style="margin: 0; padding-left: 20px; font-size: 13px; color: #475569; line-height: 1.6;">
+                  <li>Enter this 6-digit verification code on the FarmLelo verification page.</li>
+                  <li>Set your new secure account password.</li>
+                </ol>
+              </div>
+
+              <!-- Security Warning -->
+              <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 12px 16px; border-radius: 6px; margin: 24px 0 10px;">
+                <p style="margin: 0; font-size: 12.5px; line-height: 1.5; color: #991b1b;">
+                  <strong>Did not request this?</strong> If you did not initiate this password reset, please immediately secure your email account and contact FarmLelo Support.
+                </p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #F7F3EA; padding: 24px 36px; text-align: center; border-top: 1px solid #E2DBD0;">
+              <p style="margin: 0 0 6px; font-size: 12px; color: #94a3b8;">
+                &copy; <?= date('Y') ?> FarmLelo. All rights reserved.
+              </p>
+              <p style="margin: 0; font-size: 11px; color: #cbd5e1;">
+                Secured by FarmLelo Multi-Channel Verification
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

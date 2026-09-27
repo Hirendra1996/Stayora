@@ -1,0 +1,23 @@
+{
+    "name": "farmlelo/farmlelo",
+    "description": "Farmlelo - Modern Agrarian Living Platform",
+    "type": "project",
+    "require": {
+        "vlucas/phpdotenv": "^5.5",
+        "phpmailer/phpmailer": "^7.1",
+        "twilio/sdk": "^8.12"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        },
+        "files": [
+            "app/Helpers/Helper.php"
+        ]
+    },
+    "scripts": {
+        "setup": "php setup.php",
+        "dev": "php -S localhost:8000 router.php",
+        "serve": "php -S localhost:8000 router.php"
+    }
+}

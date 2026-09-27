@@ -1,0 +1,13 @@
+# Environment variables
+.env
+.env.backup
+.env.local
+
+# Composer
+/vendor/
+
+# Temporary / OS files
+.DS_Store
+Thumbs.db
+*.log
+scratch/

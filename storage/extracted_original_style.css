@@ -1,0 +1,2187 @@
+<?php
+include __DIR__ . "/Includes/header.php";
+/**
+ * Views/farmhouse_details.php
+ * Rendered by FarmdetailsController::farmhouse_details()
+ */
+
+// ── Guard: redirect if no farmhouse found ──
+if (empty($farmhouse)) {
+    redirect('home');
+}
+
+// ── Encrypted ID for forms ──
+$encryptedId = htmlspecialchars($_GET['id'] ?? '');
+
+// ── Flash messages ──
+$bookingSuccess = isset($_GET['booking']) && $_GET['booking'] === 'success';
+$reqIdParam     = (int)($_GET['req_id'] ?? 0);
+$bookingError   = !empty($_GET['booking_error']) ? htmlspecialchars(urldecode($_GET['booking_error'])) : '';
+
+// ── Capacity & Pricing configuration ──
+$allowRoomBooking = !empty($farmhouse['allow_room_booking']);
+$roomPriceConfig  = (float)($farmhouse['room_price'] ?? 0);
+$fullFarmPrice    = (float)($farmhouse['price'] ?? 0);
+
+// Base rate per room: if room booking is configured with a rate > 0 use it; otherwise use farmhouse base price
+$ratePerRoom      = ($allowRoomBooking && $roomPriceConfig > 0) ? $roomPriceConfig : $fullFarmPrice;
+$bedroomCapacity  = max(1, (int)($farmhouse['bedroom_capacity'] ?? 2)); // Default max 2 guests per bedroom
+$totalBedrooms    = max(1, (int)($farmhouse['bedrooms'] ?? 1));
+$nightCapacity    = (int)($farmhouse['night_capacity'] ?? 0);
+$maxAllowedGuests = $nightCapacity > 0 ? $nightCapacity : ($totalBedrooms * $bedroomCapacity);
+
+$priceOld         = (int)($ratePerRoom * 1.33);
+$isNego           = !empty($farmhouse['is_negotiable']);
+
+// Initial calculation for 2 guests (1 or 2 rooms depending on bedroomCapacity)
+$initGuests       = min(2, $maxAllowedGuests);
+$initRooms        = (int) ceil($initGuests / $bedroomCapacity);
+$initBasePrice    = $initRooms * $ratePerRoom;
+$initPlatformFee  = round($initBasePrice * 0.05);
+$initTotal        = $initBasePrice + $initPlatformFee;
+
+function fmt(float $n): string {
+    return '₹' . number_format($n, 0, '.', ',');
+}
+
+// ── Image URLs helper ──
+function resolveFarmImg(?string $img): string {
+    if (empty($img)) {
+        return 'https://placehold.co/800x550/E6F6FD/16A5DE?text=Farmlelo+Estate';
+    }
+    if (str_starts_with($img, 'http')) {
+        return $img;
+    }
+    if (str_starts_with($img, 'assets/')) {
+        return asset($img);
+    }
+    return asset('assets/images/uploads/farmhouses/' . $img);
+}
+
+$coverImgUrl = resolveFarmImg($images[0]['image_url'] ?? null);
+$img2Url     = resolveFarmImg($images[1]['image_url'] ?? null);
+$img3Url     = resolveFarmImg($images[2]['image_url'] ?? null);
+
+// ── QR Code & UPI settings ──
+$qrFilename = $siteSettings['payment_qr_code'] ?? '';
+$qrUrl = '';
+if (!empty($qrFilename)) {
+    if (str_starts_with($qrFilename, 'http')) {
+        $qrUrl = $qrFilename;
+    } elseif (file_exists(__DIR__ . '/../../assets/images/uploads/settings/' . $qrFilename)) {
+        $qrUrl = asset('assets/images/uploads/settings/' . $qrFilename);
+    } else {
+        $qrUrl = asset('assets/images/uploads/' . $qrFilename);
+    }
+}
+$upiId           = htmlspecialchars($siteSettings['upi_id'] ?? '');
+$paymentNotes    = htmlspecialchars($siteSettings['payment_instructions'] ?? '');
+$supportPhone    = htmlspecialchars($siteSettings['mobile_number'] ?? '8889000399');
+$supportWhatsApp = htmlspecialchars($siteSettings['whatsapp_number'] ?? $supportPhone);
+
+// ── User pre-fills ──
+$userName  = htmlspecialchars($currentUser['name']  ?? ($_SESSION['user_name'] ?? ''));
+$userEmail = htmlspecialchars($currentUser['email'] ?? ($_SESSION['user_email'] ?? ''));
+$userPhone = htmlspecialchars($currentUser['phone'] ?? '');
+
+// ── Group amenities by category / bedroom ──
+$amenityGroups = [];
+foreach ($amenities as $am) {
+    $cat     = $am['category'] ?? 'general';
+    $bedNum  = $am['bedroom_number'] ?? null;
+    $key     = ($cat === 'bedroom' && $bedNum) ? 'bedroom_' . $bedNum : $cat;
+    $amenityGroups[$key][] = $am;
+}
+
+// ── Rating & Reviews ──
+$rating  = number_format(4.2 + ($farmhouse['id'] % 8) * 0.1, 1);
+$reviews = 8 + ($farmhouse['id'] % 20);
+
+// ── Contact links ──
+$ownerPhone = preg_replace('/[^0-9+]/', '', $farmhouse['owner_phone'] ?? '');
+$ownerWa    = preg_replace('/[^0-9+]/', '', $farmhouse['owner_whatsapp'] ?? $ownerPhone);
+$waLink     = $ownerWa ? 'https://wa.me/' . ltrim($ownerWa, '+') . '?text=' . urlencode('Hi, I want to book ' . ($farmhouse['title'] ?? 'your farmhouse')) : '#';
+$callLink   = $ownerPhone ? 'tel:' . $ownerPhone : '#';
+
+// ── JSON for JS calendar & calculations ──
+$occupiedJson  = json_encode(array_values($occupiedDates));
+$requestedJson = json_encode(array_values($userRequestedDates));
+?>
+
+<style>
+/* ═══════════════════════════════════════════════════════════
+   FARMHOUSE DETAILS PAGE — COMPREHENSIVE LUXURY DESIGN SYSTEM
+   ═══════════════════════════════════════════════════════════ */
+
+.frd-page-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #1e293b;
+}
+
+/* Breadcrumb */
+.frd-breadcrumb {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.frd-breadcrumb a {
+  color: #0284c7;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.frd-breadcrumb a:hover {
+  color: #0369a1;
+  text-decoration: underline;
+}
+.frd-breadcrumb span.sep {
+  color: #cbd5e1;
+}
+
+/* Header Title Section */
+.frd-prop-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+.frd-prop-title-left h1 {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.25;
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
+}
+.frd-prop-location {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+}
+.frd-loc-badge {
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.frd-price-area {
+  text-align: right;
+  flex-shrink: 0;
+}
+.frd-price-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.frd-price-currency {
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+}
+.frd-price-num {
+  font-size: 32px;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+}
+.frd-price-period {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+}
+.frd-price-strike {
+  font-size: 14px;
+  color: #94a3b8;
+  text-decoration: line-through;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.frd-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  justify-content: flex-end;
+  font-size: 13px;
+  font-weight: 700;
+}
+.frd-star { color: #f59e0b; }
+.frd-rating-num { color: #0f172a; }
+.frd-rating-count { color: #64748b; font-weight: 500; }
+
+/* Photo Gallery Grid */
+.frd-photo-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+  border-radius: 24px;
+  overflow: hidden;
+  margin-bottom: 32px;
+  max-height: 440px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+.frd-photo-main {
+  position: relative;
+  overflow: hidden;
+  background: #f1f5f9;
+  cursor: pointer;
+  height: 440px;
+}
+.frd-photo-main img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.5s ease;
+}
+.frd-photo-main:hover img {
+  transform: scale(1.03);
+}
+.frd-view-all-btn {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 12px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+.frd-view-all-btn:hover {
+  background: rgba(15, 23, 42, 0.95);
+  transform: translateY(-1px);
+}
+.frd-photo-right {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  gap: 12px;
+  height: 440px;
+}
+.frd-photo-small {
+  position: relative;
+  overflow: hidden;
+  background: #f1f5f9;
+  cursor: pointer;
+}
+.frd-photo-small img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.5s ease;
+}
+.frd-photo-small:hover img {
+  transform: scale(1.04);
+}
+
+/* Two-Column Content Grid */
+.frd-content-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 32px;
+  align-items: start;
+}
+
+/* Left Panel & Cards */
+.frd-left-panel {
+  min-width: 0;
+}
+.frd-section-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.02);
+}
+.frd-sec-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 16px;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.frd-sec-title::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 18px;
+  background: #16a5de;
+  border-radius: 2px;
+}
+
+/* Spec Bar */
+.frd-spec-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.frd-spec-item {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+}
+.frd-spec-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #e0f4fc;
+  color: #0284c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.frd-spec-val {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+}
+.frd-spec-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* Description Text */
+.frd-desc-text {
+  font-size: 14.5px;
+  color: #334155;
+  line-height: 1.75;
+  margin: 0;
+}
+.frd-desc-text.frd-clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.frd-read-more-btn {
+  color: #0284c7;
+  font-size: 13px;
+  font-weight: 700;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.frd-read-more-btn:hover {
+  text-decoration: underline;
+}
+
+/* Amenities Grid */
+.frd-amenity-group {
+  margin-bottom: 20px;
+}
+.frd-amenity-group:last-child {
+  margin-bottom: 0;
+}
+.frd-amenity-group-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.frd-amenity-pill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+.frd-amenity-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  transition: all 0.15s ease;
+}
+.frd-amenity-pill:hover {
+  background: #f0f9ff;
+  border-color: #7dd3fc;
+  color: #0284c7;
+}
+.frd-amenity-icon {
+  font-size: 20px;
+  color: #0284c7;
+  flex-shrink: 0;
+}
+
+/* House Rules Grid */
+.frd-rules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+.frd-rule-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+.frd-rule-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.frd-rule-icon {
+  font-size: 18px;
+  color: #64748b;
+}
+.frd-rule-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+.frd-rule-badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.frd-rule-badge.frd-allowed {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+.frd-rule-badge.frd-not-allowed {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+/* Policies */
+.frd-policy-row-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+.frd-policy-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+}
+.frd-policy-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.frd-policy-body strong {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 3px;
+}
+.frd-policy-body span {
+  display: block;
+  font-size: 12.5px;
+  color: #64748b;
+  line-height: 1.4;
+}
+.frd-policy-link {
+  background: none;
+  border: none;
+  color: #0284c7;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0;
+  margin-top: 4px;
+  cursor: pointer;
+}
+.frd-policy-link:hover {
+  text-decoration: underline;
+}
+
+/* Calendar Section */
+.frd-cal-hint {
+  font-size: 13.5px;
+  color: #64748b;
+  margin: 0 0 16px;
+}
+.frd-cal-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.frd-cal-nav-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.frd-cal-nav-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+.frd-cal-labels {
+  display: flex;
+  gap: 32px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+}
+.frd-cal-months {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+.frd-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.frd-cal-dow {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #94a3b8;
+  padding: 6px 0;
+  text-transform: uppercase;
+}
+.frd-cal-day {
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #1e293b;
+  padding: 8px 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.frd-cal-day:hover:not(.frd-booked):not(.frd-past):not(.frd-empty) {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+.frd-cal-day.frd-empty {
+  cursor: default;
+}
+.frd-cal-day.frd-past {
+  color: #cbd5e1;
+  cursor: not-allowed;
+}
+.frd-cal-day.frd-today-mark {
+  border: 1.5px solid #16a5de;
+  color: #16a5de;
+}
+.frd-cal-day.frd-booked {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+.frd-cal-day.frd-requested {
+  background: #fef3c7;
+  color: #d97706;
+  cursor: not-allowed;
+}
+.frd-cal-day.frd-range-start,
+.frd-cal-day.frd-range-end {
+  background: #16a5de !important;
+  color: #ffffff !important;
+}
+.frd-cal-day.frd-range-start {
+  border-radius: 10px 0 0 10px;
+}
+.frd-cal-day.frd-range-end {
+  border-radius: 0 10px 10px 0;
+}
+.frd-cal-day.frd-in-range {
+  background: #e0f2fe !important;
+  color: #0369a1 !important;
+  border-radius: 0;
+}
+.frd-cal-day.frd-single-selected {
+  background: #16a5de !important;
+  color: #ffffff !important;
+  border-radius: 10px;
+}
+.frd-cal-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+}
+.frd-leg-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+.frd-leg-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+}
+.frd-leg-avail { background: #ffffff; border: 1px solid #cbd5e1; }
+.frd-leg-selected { background: #16a5de; }
+.frd-leg-booked { background: #f1f5f9; border: 1px solid #e2e8f0; }
+.frd-leg-requested { background: #fef3c7; border: 1px solid #fde68a; }
+
+.frd-cal-selection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 20px;
+  margin-top: 18px;
+}
+.frd-cal-sel-col {
+  display: flex;
+  flex-direction: column;
+}
+.frd-cal-sel-lbl {
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.frd-cal-sel-col strong {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-top: 2px;
+}
+.frd-cal-arrow {
+  font-size: 18px;
+  color: #94a3b8;
+  font-weight: 800;
+}
+
+/* ── RIGHT BOOKING CARD ── */
+.frd-booking-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 30px -5px rgba(0,0,0,0.06);
+  position: sticky;
+  top: 95px;
+}
+.frd-bc-price-top {
+  font-size: 26px;
+  font-weight: 900;
+  color: #0f172a;
+  margin-bottom: 2px;
+  letter-spacing: -0.02em;
+}
+.frd-bc-price-top span {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 600;
+}
+.frd-bc-price-sub {
+  font-size: 12px;
+  color: #059669;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 12px;
+}
+.frd-bc-nego {
+  font-size: 12px;
+  color: #d97706;
+  font-weight: 700;
+  margin-bottom: 14px;
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+.frd-bc-guest-row {
+  margin-bottom: 14px;
+  padding: 14px 0;
+  border-top: 1px solid #f1f5f9;
+  border-bottom: 1px solid #f1f5f9;
+}
+.frd-bc-guest-label {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f172a;
+}
+.frd-bc-guest-sub {
+  font-size: 11.5px;
+  color: #64748b;
+  font-weight: 500;
+}
+.frd-bc-guest-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.frd-bc-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+  transition: all 0.15s ease;
+}
+.frd-bc-btn.frd-minus {
+  background: #f1f5f9;
+  color: #475569;
+}
+.frd-bc-btn.frd-minus:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+.frd-bc-btn.frd-plus {
+  background: #16a5de;
+  color: #ffffff;
+}
+.frd-bc-btn.frd-plus:hover {
+  background: #0284c7;
+}
+.frd-bc-gcount {
+  font-size: 17px;
+  font-weight: 900;
+  color: #0f172a;
+  min-width: 22px;
+  text-align: center;
+}
+.frd-room-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #e0f4fc;
+  border: 1px solid #bce3f6;
+  color: #0284c7;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 10px;
+  margin-top: 8px;
+}
+.frd-bc-dates-display {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.5;
+}
+.frd-bc-dates-display strong {
+  color: #0f172a;
+  font-weight: 800;
+}
+.frd-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+.frd-breakdown-row strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+.frd-bc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+.frd-bc-row.frd-total {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 10px;
+  margin-top: 8px;
+}
+.frd-bc-row.frd-total .frd-bc-label {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+}
+.frd-bc-row.frd-total .frd-bc-val {
+  font-size: 20px;
+  font-weight: 900;
+  color: #16a5de;
+}
+.frd-bc-label {
+  font-weight: 600;
+}
+.frd-bc-val {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* Mini Rules */
+.frd-rules-card-mini {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 14px 0;
+}
+.frd-rules-card-mini h5 {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+.frd-rules-mini-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.frd-rule-mini {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #475569;
+  font-weight: 600;
+}
+.frd-rdot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.frd-rdot.frd-ok { background: #10b981; }
+.frd-rdot.frd-no { background: #ef4444; }
+
+/* Security Deposit */
+.frd-deposit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+.frd-deposit-amount {
+  font-size: 16px;
+  font-weight: 900;
+  color: #065f46;
+}
+.frd-deposit-label {
+  font-size: 11px;
+  color: #047857;
+  font-weight: 600;
+}
+.frd-deposit-badge {
+  background: #10b981;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+.frd-deposit-note {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-bottom: 12px;
+}
+
+/* Agreement Checkbox */
+.frd-agree-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.frd-agree-row input {
+  width: 16px;
+  height: 16px;
+  accent-color: #16a5de;
+  margin-top: 2px;
+  cursor: pointer;
+}
+.frd-agree-row label {
+  font-size: 12.5px;
+  color: #475569;
+  font-weight: 500;
+}
+.frd-agree-row a {
+  color: #0284c7;
+  font-weight: 700;
+  text-decoration: none;
+}
+.frd-agree-row a:hover {
+  text-decoration: underline;
+}
+
+/* Action CTA Buttons */
+.frd-book-btn {
+  width: 100%;
+  background: #16a5de;
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(22,165,222,0.3);
+  margin-bottom: 10px;
+}
+.frd-book-btn:hover {
+  background: #0284c7;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(2,132,199,0.35);
+}
+.frd-login-prompt {
+  width: 100%;
+  background: #16a5de;
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 800;
+  text-align: center;
+  display: block;
+  text-decoration: none;
+  box-shadow: 0 4px 15px rgba(22,165,222,0.3);
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+}
+.frd-login-prompt:hover {
+  background: #0284c7;
+  transform: translateY(-1px);
+}
+
+/* Contact Buttons */
+.frd-contact-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.frd-contact-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.frd-contact-btn.frd-call {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+.frd-contact-btn.frd-call:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+.frd-contact-btn.frd-wa {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+.frd-contact-btn.frd-wa:hover {
+  background: #bbf7d0;
+}
+
+/* Help Box */
+.frd-help-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+}
+.frd-help-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+.frd-help-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #475569;
+  margin-bottom: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.frd-help-item:hover {
+  color: #16a5de;
+}
+
+/* Modals */
+.frd-modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+.frd-modal-box {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 28px;
+  max-width: 580px;
+  width: 92%;
+  position: relative;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.frd-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  background: #f1f5f9;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.frd-modal-close:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+.frd-modal-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 12px;
+}
+.frd-modal-note {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 12px;
+}
+
+/* Fullscreen Gallery Modal */
+.frd-gallery-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(10px);
+  z-index: 10000;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.frd-gallery-overlay.frd-open {
+  display: flex;
+}
+.frd-gallery-close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  color: #ffffff;
+  font-size: 32px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-weight: 800;
+}
+.frd-gallery-img {
+  max-width: 90vw;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+.frd-gallery-nav {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-top: 18px;
+}
+.frd-gallery-nav-btn {
+  background: rgba(255,255,255,0.15);
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 12px;
+  padding: 10px 22px;
+  font-size: 15px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: background 0.2s ease;
+}
+.frd-gallery-nav-btn:hover {
+  background: rgba(255,255,255,0.3);
+}
+.frd-gallery-counter {
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Responsive Overrides */
+@media(max-width: 960px) {
+  .frd-content-grid {
+    grid-template-columns: 1fr;
+  }
+  .frd-booking-card {
+    position: static;
+  }
+  .frd-cal-months {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+@media(max-width: 640px) {
+  .frd-prop-title-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .frd-price-area {
+    text-align: left;
+  }
+  .frd-price-main {
+    justify-content: flex-start;
+  }
+  .frd-rating-row {
+    justify-content: flex-start;
+  }
+  .frd-photo-grid {
+    grid-template-columns: 1fr;
+    max-height: none;
+  }
+  .frd-photo-main {
+    height: 260px;
+  }
+  .frd-photo-right {
+    display: none;
+  }
+  .frd-cal-labels {
+    gap: 12px;
+    font-size: 13px;
+  }
+}
+</style>
+
+<!-- ── FULLSCREEN GALLERY OVERLAY ── -->
+<div class="frd-gallery-overlay" id="frd-gallery-overlay">
+  <button class="frd-gallery-close" onclick="frdCloseGallery()">✕</button>
+  <img class="frd-gallery-img" id="frd-gallery-img" src="" alt="Gallery image"/>
+  <div class="frd-gallery-nav">
+    <button class="frd-gallery-nav-btn" onclick="frdGalleryNav(-1)">‹ Prev</button>
+    <span class="frd-gallery-counter" id="frd-gallery-counter">1 / <?= count($images) ?></span>
+    <button class="frd-gallery-nav-btn" onclick="frdGalleryNav(1)">Next ›</button>
+  </div>
+</div>
+
+<!-- ── PAGE WRAP (adds top padding for sticky header) ── -->
+<div class="frd-page-wrap" style="padding-top:92px;">
+
+  <!-- Breadcrumb -->
+  <div class="frd-breadcrumb">
+    <a href="<?= url('/') ?>">Home</a>
+    <span class="sep">›</span>
+    <a href="<?= url('/?location=' . urlencode($farmhouse['location'] ?? '')) ?>"><?= htmlspecialchars($farmhouse['location'] ?? 'Farmhouses') ?></a>
+    <span class="sep">›</span>
+    <span><?= htmlspecialchars($farmhouse['title'] ?? '') ?></span>
+  </div>
+
+  <!-- ── Booking SUCCESS banner ── -->
+  <?php if ($bookingSuccess): ?>
+  <div class="frd-success-banner" id="frd-success-banner" style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:16px;padding:16px 20px;margin-bottom:24px;box-shadow:0 4px 15px rgba(34,197,94,0.08);">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span style="font-size:28px;">🎉</span>
+      <div>
+        <h4 style="margin:0;font-size:15px;font-weight:800;color:#166534;">Booking Request Submitted Successfully! <?= $reqIdParam ? "(#REQ-{$reqIdParam})" : '' ?></h4>
+        <p style="margin:2px 0 0;font-size:12.5px;color:#15803d;">Your reservation has been received. Please share your payment screenshot on WhatsApp to finalize confirmation.</p>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <?php 
+        $waConfirmMsg = urlencode("Hello! I have submitted booking request " . ($reqIdParam ? "#REQ-{$reqIdParam}" : "") . " for " . ($farmhouse['title'] ?? 'Farmhouse') . " on FarmLelo. Please find my reservation details.");
+      ?>
+      <a href="https://wa.me/91<?= preg_replace('/[^0-9]/', '', $supportWhatsApp) ?>?text=<?= $waConfirmMsg ?>" target="_blank" rel="noopener" 
+         style="background:#15803d;color:#fff;text-decoration:none;padding:9px 16px;border-radius:12px;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(21,128,61,0.2);">
+        💬 Send WhatsApp Confirmation
+      </a>
+      <button class="frd-sb-close" onclick="document.getElementById('frd-success-banner').style.display='none'" style="background:none;border:none;font-size:22px;color:#166534;cursor:pointer;">×</button>
+    </div>
+  </div>
+  <?php endif; ?>
+
+  <!-- ── Booking ERROR banner ── -->
+  <?php if ($bookingError): ?>
+  <div class="frd-error-banner" id="frd-error-banner" style="
+      display:flex;
+      align-items:flex-start;
+      gap:12px;
+      background:#fff5f5;
+      border:1px solid #feb2b2;
+      border-left:4px solid #e53e3e;
+      border-radius:14px;
+      padding:16px;
+      margin:0 0 24px 0;
+      position:relative;
+  ">
+    <span style="font-size:22px;line-height:1.3;">❌</span>
+    <p style="margin:0;color:#c53030;font-size:14px;font-weight:700;line-height:1.5;"><?= $bookingError ?></p>
+    <button
+      onclick="document.getElementById('frd-error-banner').style.display='none'"
+      style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:20px;color:#c53030;cursor:pointer;line-height:1;"
+      aria-label="Dismiss">×</button>
+  </div>
+  <?php endif; ?>
+
+  <!-- ── TITLE AREA ── -->
+  <div class="frd-prop-title-row">
+    <div class="frd-prop-title-left">
+      <h1><?= htmlspecialchars($farmhouse['title'] ?? '') ?></h1>
+      <div class="frd-prop-location">
+        <span>📍 <?= htmlspecialchars($farmhouse['location'] ?? '') ?></span>
+        <?php if (!empty($farmhouse['address'])): ?>
+          <span style="color:#cbd5e1;">·</span>
+          <span style="color:#94a3b8;font-size:13px;"><?= htmlspecialchars($farmhouse['address']) ?></span>
+        <?php endif; ?>
+        <span class="frd-loc-badge">Verified Farmhouse</span>
+      </div>
+    </div>
+    <div class="frd-price-area">
+      <div class="frd-price-main">
+        <span class="frd-price-currency">₹</span>
+        <span class="frd-price-num"><?= number_format($ratePerRoom) ?></span>
+        <span class="frd-price-period">/ room / night</span>
+      </div>
+      <?php if ($priceOld > $ratePerRoom): ?>
+        <div class="frd-price-strike">₹<?= number_format($priceOld) ?></div>
+      <?php endif; ?>
+      <div class="frd-rating-row">
+        <span class="frd-star">★</span>
+        <span class="frd-rating-num"><?= $rating ?></span>
+        <span class="frd-rating-count">(<?= $reviews ?> reviews)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PHOTO GRID ── -->
+  <div class="frd-photo-grid">
+    <div class="frd-photo-main" onclick="frdOpenGallery(0)">
+      <img src="<?= $coverImgUrl ?>" alt="<?= htmlspecialchars($farmhouse['title'] ?? '') ?>"
+           onerror="this.src='https://placehold.co/800x550/E6F6FD/16A5DE?text=Farmlelo+Estate'"/>
+      <button class="frd-view-all-btn" onclick="event.stopPropagation();frdOpenGallery(0)">
+        📷 View all <?= max(1, count($images)) ?> photos
+      </button>
+    </div>
+    <div class="frd-photo-right">
+      <div class="frd-photo-small" onclick="frdOpenGallery(1)">
+        <img src="<?= $img2Url ?>" alt="Photo 2"
+             onerror="this.src='https://placehold.co/400x270/E6F6FD/16A5DE?text=Farmlelo+Estate'"/>
+      </div>
+      <div class="frd-photo-small" onclick="frdOpenGallery(2)">
+        <img src="<?= $img3Url ?>" alt="Photo 3"
+             onerror="this.src='https://placehold.co/400x270/E6F6FD/16A5DE?text=Farmlelo+Estate'"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MAIN CONTENT GRID ── -->
+  <div class="frd-content-grid">
+
+    <!-- ══ LEFT PANEL ══ -->
+    <div class="frd-left-panel">
+
+      <!-- Spec bar -->
+      <div class="frd-spec-bar">
+        <div class="frd-spec-item">
+          <div class="frd-spec-icon">🛏️</div>
+          <div>
+            <div class="frd-spec-val"><?= (int)($farmhouse['bedrooms'] ?? 1) ?> BHK</div>
+            <div class="frd-spec-lbl"><?= $bedroomCapacity ?> Guests / Room</div>
+          </div>
+        </div>
+        <div class="frd-spec-item">
+          <div class="frd-spec-icon">👥</div>
+          <div>
+            <div class="frd-spec-val"><?= (int)($farmhouse['night_capacity'] ?? ($totalBedrooms * $bedroomCapacity)) ?> Max</div>
+            <div class="frd-spec-lbl">Overnight Stays</div>
+          </div>
+        </div>
+        <?php if (!empty($farmhouse['day_capacity'])): ?>
+        <div class="frd-spec-item">
+          <div class="frd-spec-icon">🎉</div>
+          <div>
+            <div class="frd-spec-val"><?= (int)$farmhouse['day_capacity'] ?> Max</div>
+            <div class="frd-spec-lbl">Day Gathering</div>
+          </div>
+        </div>
+        <?php endif; ?>
+        <div class="frd-spec-item">
+          <div class="frd-spec-icon">🛡️</div>
+          <div>
+            <div class="frd-spec-val">Assured</div>
+            <div class="frd-spec-lbl">Verified Listing</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="frd-section-card">
+        <h3 class="frd-sec-title">Description</h3>
+        <p class="frd-desc-text frd-clamped" id="frd-desc-text">
+          <?= nl2br(htmlspecialchars($farmhouse['description'] ?? 'No description provided.')) ?>
+        </p>
+        <button class="frd-read-more-btn" id="frd-desc-btn" onclick="frdToggleClamp('frd-desc-text','frd-desc-btn')">Read more</button>
+      </div>
+
+      <!-- Amenities -->
+      <div class="frd-section-card">
+        <h3 class="frd-sec-title">Amenities</h3>
+
+        <?php if (empty($amenityGroups)): ?>
+          <p style="color:#94a3b8;font-size:13px;">No specific amenities listed for this farmhouse.</p>
+        <?php else: ?>
+          <?php foreach ($amenityGroups as $groupKey => $groupItems):
+            if (str_starts_with($groupKey, 'bedroom_')) {
+              $num   = substr($groupKey, 8);
+              $title = 'Bedroom ' . $num;
+            } else {
+              $title = ucfirst($groupKey);
+            }
+          ?>
+          <div class="frd-amenity-group">
+            <div class="frd-amenity-group-title"><?= htmlspecialchars($title) ?></div>
+            <div class="frd-amenity-pill-grid">
+              <?php foreach ($groupItems as $item): ?>
+              <div class="frd-amenity-pill">
+                <span class="material-symbols-outlined frd-amenity-icon"><?= htmlspecialchars($item['icon_class'] ?? 'check') ?></span>
+                <span><?= htmlspecialchars($item['name']) ?></span>
+              </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+
+      <!-- House Rules -->
+      <div class="frd-section-card">
+        <h3 class="frd-sec-title">House Rules</h3>
+        <div class="frd-rules-grid">
+          <?php foreach ($rules as $rule): ?>
+          <div class="frd-rule-item">
+            <div class="frd-rule-left">
+              <span class="frd-rule-icon material-symbols-outlined"><?= htmlspecialchars($rule['icon_class'] ?? 'gavel') ?></span>
+              <span class="frd-rule-name"><?= htmlspecialchars($rule['rule_name']) ?></span>
+            </div>
+            <span class="frd-rule-badge <?= $rule['is_allowed'] ? 'frd-allowed' : 'frd-not-allowed' ?>">
+              <?= $rule['is_allowed'] ? 'Allowed' : 'Not Allowed' ?>
+            </span>
+          </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+
+      <!-- Policies -->
+      <div class="frd-section-card">
+        <h3 class="frd-sec-title">Policies</h3>
+        <div class="frd-policy-row-grid">
+          <div class="frd-policy-card">
+            <div class="frd-policy-icon">🕐</div>
+            <div class="frd-policy-body">
+              <strong>Check-in / Check-out</strong>
+              <span>Check-in: 08:00 AM &nbsp;·&nbsp; Check-out: 08:00 AM (Next Day)</span>
+            </div>
+          </div>
+          <div class="frd-policy-card">
+            <div class="frd-policy-icon">↩️</div>
+            <div class="frd-policy-body">
+              <strong>Cancellation Policy</strong>
+              <span>Free cancellation up to 7 days before check-in.</span>
+              <button class="frd-policy-link" onclick="document.getElementById('frd-cancel-modal').style.display='flex'">View policy details</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Calendar / Availability -->
+      <div class="frd-section-card" id="frd-cal-section">
+        <h3 class="frd-sec-title">Availability & Booking Dates</h3>
+        <p class="frd-cal-hint">Select your check-in and check-out dates on the calendar:</p>
+
+        <!-- Calendar Month Header & Nav -->
+        <div class="frd-cal-controls">
+          <button class="frd-cal-nav-btn" onclick="frdPrevMonth()">‹</button>
+          <div class="frd-cal-labels">
+            <span id="frd-month1-label"></span>
+            <span id="frd-month2-label"></span>
+          </div>
+          <button class="frd-cal-nav-btn" onclick="frdNextMonth()">›</button>
+        </div>
+
+        <!-- 2-Month Grid Wrap -->
+        <div class="frd-cal-months" id="frd-cal-months-wrap"></div>
+
+        <!-- Legend -->
+        <div class="frd-cal-legend">
+          <div class="frd-leg-item"><div class="frd-leg-dot frd-leg-avail"></div>Available</div>
+          <div class="frd-leg-item"><div class="frd-leg-dot frd-leg-selected"></div>Selected</div>
+          <div class="frd-leg-item"><div class="frd-leg-dot frd-leg-booked"></div>Occupied / Blocked</div>
+          <?php if ($userId): ?>
+          <div class="frd-leg-item"><div class="frd-leg-dot frd-leg-requested"></div>Your Pending</div>
+          <?php endif; ?>
+        </div>
+
+        <!-- Checkin / Checkout summary banner -->
+        <div class="frd-cal-selection-bar">
+          <div class="frd-cal-sel-col">
+            <span class="frd-cal-sel-lbl">Check-in</span>
+            <strong id="frd-ci-date-label">Select date</strong>
+          </div>
+          <div class="frd-cal-arrow">→</div>
+          <div class="frd-cal-sel-col">
+            <span class="frd-cal-sel-lbl">Check-out</span>
+            <strong id="frd-co-date-label">Select date</strong>
+          </div>
+        </div>
+
+        <!-- My pending requests -->
+        <?php if ($userId && !empty($myPendingRequests)): ?>
+        <div class="frd-my-requests" style="background:#fffbeb;border:1px solid #fef3c7;border-radius:14px;padding:16px;margin-top:16px;">
+          <h4 style="font-size:13.5px;font-weight:800;color:#b45309;margin:0 0 10px;">⏳ Your Pending Booking Inquiries</h4>
+          <?php foreach ($myPendingRequests as $req): ?>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #fde68a;font-size:12.5px;color:#78350f;">
+            <span>📅 <?= htmlspecialchars($req['check_in']) ?> → <?= htmlspecialchars($req['check_out']) ?></span>
+            <span>👥 <?= (int)$req['guests'] ?> guests</span>
+            <strong>₹<?= number_format((float)$req['price']) ?> Total</strong>
+            <span style="background:#fef3c7;color:#b45309;padding:2px 8px;border-radius:6px;font-weight:700;font-size:11px;">Pending Approval</span>
+          </div>
+          <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+      </div>
+
+    </div><!-- /frd-left-panel -->
+
+    <!-- ══ RIGHT: BOOKING CARD ══ -->
+    <div>
+      <div class="frd-booking-card">
+        <div class="frd-bc-price-top">
+          <?= fmt($ratePerRoom) ?> <span>/ room / night</span>
+        </div>
+        <span class="frd-bc-price-sub">✨ Max <?= $bedroomCapacity ?> Guests per Room (Fixed Rate)</span>
+
+        <?php if ($isNego): ?>
+          <div class="frd-bc-nego">💬 Price is open to negotiation for extended stays</div>
+        <?php endif; ?>
+
+        <!-- Guest counter & Dynamic Room Allocation -->
+        <div class="frd-bc-guest-row">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="frd-bc-guest-label">Number of Guests</div>
+              <div class="frd-bc-guest-sub">Children included · Auto room calc</div>
+            </div>
+            <div class="frd-bc-guest-ctrl">
+              <button type="button" class="frd-bc-btn frd-minus" onclick="frdBcChg(-1)" aria-label="Decrease Guests">−</button>
+              <span class="frd-bc-gcount" id="frd-bc-g"><?= $initGuests ?></span>
+              <button type="button" class="frd-bc-btn frd-plus" onclick="frdBcChg(1)" aria-label="Increase Guests">+</button>
+            </div>
+          </div>
+          <!-- Real-Time Room Allocation Pill -->
+          <div id="frd-room-allocation-pill" class="frd-room-pill">
+            🛏️ <?= $initRooms ?> Room<?= $initRooms > 1 ? 's' : '' ?> required (Max <?= $bedroomCapacity ?> guests/room)
+          </div>
+        </div>
+
+        <!-- Selected dates display -->
+        <div class="frd-bc-dates-display" id="frd-bc-dates-display">
+          <strong>Check-in:</strong> <span id="frd-bc-ci">Not selected</span><br/>
+          <strong>Check-out:</strong> <span id="frd-bc-co">Not selected</span>
+        </div>
+
+        <!-- Detailed Price breakdown -->
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:14px;margin-bottom:14px;">
+          <div class="frd-breakdown-row">
+            <span>Rate per room:</span>
+            <strong><?= fmt($ratePerRoom) ?> / night</strong>
+          </div>
+          <div class="frd-breakdown-row">
+            <span>Rooms allocated:</span>
+            <strong id="frd-bc-rooms-count"><?= $initRooms ?> Room<?= $initRooms > 1 ? 's' : '' ?></strong>
+          </div>
+          <div class="frd-breakdown-row">
+            <span>Duration:</span>
+            <strong id="frd-bc-nights-count">1 Night</strong>
+          </div>
+          <div class="frd-bc-row" style="margin-top:6px;padding-top:6px;border-top:1px dashed #cbd5e1;">
+            <span class="frd-bc-label">Base price:</span>
+            <span class="frd-bc-val" id="frd-bc-base"><?= fmt($initBasePrice) ?></span>
+          </div>
+          <div class="frd-bc-row">
+            <span class="frd-bc-label">Platform fee (incl. GST) (5%):</span>
+            <span class="frd-bc-val" id="frd-platform-fee-display">+ <?= fmt($initPlatformFee) ?></span>
+          </div>
+          <div class="frd-bc-row frd-total" style="margin-top:6px;">
+            <span class="frd-bc-label">Total Payable:</span>
+            <span class="frd-bc-val" id="frd-bc-total"><?= fmt($initTotal) ?></span>
+          </div>
+        </div>
+
+        <!-- Rules mini -->
+        <?php if (!empty($rules)): ?>
+        <div class="frd-rules-card-mini">
+          <h5>Important Rules</h5>
+          <div class="frd-rules-mini-grid">
+            <?php foreach (array_slice($rules, 0, 6) as $rule): ?>
+            <div class="frd-rule-mini">
+              <div class="frd-rdot <?= $rule['is_allowed'] ? 'frd-ok' : 'frd-no' ?>"></div>
+              <?= htmlspecialchars($rule['rule_name']) ?>
+            </div>
+            <?php endforeach; ?>
+          </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Security deposit -->
+        <div class="frd-deposit-row">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:20px;">💰</span>
+            <div>
+              <div class="frd-deposit-amount">₹3,000</div>
+              <div class="frd-deposit-label">Security Deposit</div>
+            </div>
+          </div>
+          <span class="frd-deposit-badge">Pay at Check-in</span>
+        </div>
+        <div class="frd-deposit-note">Refunded by host if no damage.</div>
+
+        <!-- Agree checkbox -->
+        <div class="frd-agree-row">
+          <input type="checkbox" id="frd-agree-chk"/>
+          <label for="frd-agree-chk">I agree to the <a href="#" onclick="document.getElementById('frd-house-rules-modal').style.display='flex';return false;">Important Rules</a></label>
+        </div>
+
+        <!-- Booking CTA -->
+        <?php if ($userId): ?>
+          <button type="button" class="frd-book-btn" id="frd-book-btn" onclick="frdOpenBookingModal()">
+            Request Booking
+          </button>
+        <?php else: ?>
+          <a href="<?= url('login?redirect=' . urlencode('farmhouse_details?id=' . $encryptedId)) ?>" class="frd-login-prompt">
+            Login to Book this Farm
+          </a>
+        <?php endif; ?>
+
+        <!-- Contact buttons -->
+        <div class="frd-contact-btns">
+          <?php if ($ownerPhone): ?>
+            <a href="<?= $callLink ?>" class="frd-contact-btn frd-call">📞 Call Owner</a>
+          <?php endif; ?>
+          <?php if ($ownerWa): ?>
+            <a href="<?= htmlspecialchars($waLink) ?>" target="_blank" rel="noopener" class="frd-contact-btn frd-wa">💬 WhatsApp</a>
+          <?php endif; ?>
+        </div>
+
+        <!-- Help -->
+        <div class="frd-help-section">
+          <div class="frd-help-title">Need Help?</div>
+          <?php if ($supportPhone): ?>
+            <a href="tel:<?= htmlspecialchars($supportPhone) ?>" class="frd-help-item">
+              <span class="material-symbols-outlined" style="font-size:16px;">call</span>
+              <span>Call us: <?= htmlspecialchars($supportPhone) ?></span>
+            </a>
+          <?php endif; ?>
+          <?php if ($supportWhatsApp): ?>
+            <a href="https://wa.me/91<?= preg_replace('/[^0-9]/', '', $supportWhatsApp) ?>?text=<?= urlencode('Hi, I need help booking ' . ($farmhouse['title'] ?? 'this farmhouse')) ?>" target="_blank" rel="noopener" class="frd-help-item">
+              <span class="material-symbols-outlined" style="font-size:16px;">chat</span>
+              <span>WhatsApp Support</span>
+            </a>
+          <?php endif; ?>
+        </div>
+
+      </div>
+    </div><!-- /right -->
+
+  </div><!-- /frd-content-grid -->
+
+</div><!-- /frd-page-wrap -->
+
+<!-- ── MODALS ── -->
+
+<!-- 1. EXECUTIVE BOOKING REQUEST & PAYMENT QR MODAL -->
+<div id="frd-booking-request-modal" class="frd-modal-backdrop">
+  <div class="frd-modal-box">
+    <button class="frd-modal-close" onclick="frdCloseBookingModal()">×</button>
+    
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #e2e8f0;">
+      <div style="width:42px;height:42px;border-radius:12px;background:#e0f4fc;color:#0284c7;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">
+        🏡
+      </div>
+      <div>
+        <h3 class="frd-modal-title" style="margin:0;font-size:18px;font-weight:800;color:#0f172a;">Complete Booking Request</h3>
+        <p style="margin:0;font-size:12.5px;color:#64748b;font-weight:600;"><?= htmlspecialchars($farmhouse['title']) ?> · <?= htmlspecialchars($farmhouse['location'] ?? '') ?></p>
+      </div>
+    </div>
+
+    <!-- Booking Summary Card -->
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:14px;margin-bottom:16px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12.5px;">
+        <div>
+          <span style="color:#64748b;font-size:11px;font-weight:800;text-transform:uppercase;display:block;">Dates & Stay</span>
+          <div style="font-weight:800;color:#0f172a;margin-top:2px;" id="frd-modal-stay-dates">Select dates</div>
+        </div>
+        <div>
+          <span style="color:#64748b;font-size:11px;font-weight:800;text-transform:uppercase;display:block;">Guests & Allocation</span>
+          <div style="font-weight:800;color:#0f172a;margin-top:2px;" id="frd-modal-guests-rooms">2 Guests · 1 Room</div>
+        </div>
+        <div style="grid-column: span 2; padding-top:8px; margin-top:4px; border-top:1px dashed #cbd5e1; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-weight:700;color:#334155;font-size:13px;">Total Amount (incl. platform fees):</span>
+          <span style="font-size:20px;font-weight:900;color:#16a5de;" id="frd-modal-total-price">₹0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Official Payment QR Code & Advance Deposit Card -->
+    <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:16px;padding:16px;text-align:center;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:10px;">
+        <span style="font-size:18px;">💳</span>
+        <strong style="font-size:14px;color:#166534;font-weight:800;">Official UPI Advance Deposit</strong>
+      </div>
+
+      <?php if (!empty($qrUrl)): ?>
+        <div style="width:170px;height:170px;margin:0 auto 12px;background:#fff;padding:8px;border-radius:14px;border:1.5px solid #22c55e;box-shadow:0 4px 14px rgba(34,197,94,0.15);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+          <img src="<?= $qrUrl ?>" alt="Official Payment QR Code" style="width:100%;height:100%;object-fit:contain;">
+        </div>
+        <div style="font-size:11.5px;font-weight:700;color:#15803d;margin-bottom:8px;">
+          Scan with GPay, PhonePe, Paytm or any UPI App
+        </div>
+      <?php endif; ?>
+
+      <?php if (!empty($upiId)): ?>
+        <div style="display:inline-flex;align-items:center;gap:8px;background:#ffffff;padding:6px 14px;border-radius:10px;border:1px solid #86efac;margin-bottom:8px;">
+          <span style="font-size:11.5px;color:#64748b;font-weight:700;">UPI ID:</span>
+          <span style="font-family:monospace;font-weight:800;color:#0f172a;font-size:13px;" id="frd-upi-id-text"><?= $upiId ?></span>
+          <button type="button" class="frd-copy-badge" id="frd-copy-upi-btn" onclick="frdCopyUpi('<?= $upiId ?>')" style="padding:4px 8px;border-radius:6px;background:#f1f5f9;border:1px solid #cbd5e1;font-size:11px;font-weight:700;cursor:pointer;">
+            📋 Copy
+          </button>
+        </div>
+      <?php endif; ?>
+
+      <p style="margin:4px 0 0;font-size:11.5px;color:#166534;line-height:1.45;font-weight:500;">
+        <?= !empty($paymentNotes) ? $paymentNotes : "Scan the QR code or use the UPI ID to pay your booking advance deposit. After payment, submit this request and share your transaction screenshot on WhatsApp to finalize confirmation." ?>
+      </p>
+    </div>
+
+    <!-- Booking Form -->
+    <form method="POST" action="<?= url('farmhouse/request_booking') ?>" id="frd-booking-form" onsubmit="return frdSubmitBookingModal(this)">
+      <input type="hidden" name="farmhouse_id"    value="<?= $encryptedId ?>"/>
+      <input type="hidden" name="check_in"        id="frd-form-checkin"       value=""/>
+      <input type="hidden" name="check_out"       id="frd-form-checkout"      value=""/>
+      <input type="hidden" name="check_in_time"   id="frd-form-checkin-time"  value="08:00"/>
+      <input type="hidden" name="check_out_time"  id="frd-form-checkout-time" value="08:00"/>
+      <input type="hidden" name="guests"          id="frd-form-guests"        value="<?= $initGuests ?>"/>
+      <input type="hidden" name="rooms"           id="frd-form-rooms"         value="<?= $initRooms ?>"/>
+      <input type="hidden" name="price"           id="frd-form-price"         value="<?= $initTotal ?>"/>
+
+      <!-- Guest Details -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div style="text-align:left;">
+          <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:4px;">Your Name</label>
+          <input type="text" value="<?= $userName ?>" readonly style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:10px;font-size:13px;background:#f8fafc;color:#1e293b;cursor:not-allowed;box-sizing:border-box;">
+        </div>
+        <div style="text-align:left;">
+          <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:4px;">Contact Phone</label>
+          <input type="text" value="<?= $userPhone ?: $supportPhone ?>" readonly style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:10px;font-size:13px;background:#f8fafc;color:#1e293b;cursor:not-allowed;box-sizing:border-box;">
+        </div>
+      </div>
+
+      <div style="text-align:left;margin-bottom:14px;">
+        <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:4px;">Special Requests / UTR Reference (Optional)</label>
+        <textarea name="message" rows="2" placeholder="e.g. Arriving at 9 AM, advance deposit paid via UPI ref #123456789..." style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:10px;font-size:13px;color:#1e293b;box-sizing:border-box;font-family:inherit;resize:none;"></textarea>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button type="button" onclick="frdCloseBookingModal()" style="flex:1;padding:12px;background:#f1f5f9;border:none;border-radius:12px;font-size:13px;font-weight:700;color:#475569;cursor:pointer;">
+          Cancel
+        </button>
+        <button type="submit" id="frd-submit-request-btn" style="flex:2;padding:12px;background:#16a5de;border:none;border-radius:12px;font-size:14px;font-weight:800;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background 0.2s;box-shadow:0 4px 12px rgba(22,165,222,0.3);">
+          <span>Submit Booking Request</span> ✓
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<!-- 2. House Rules Modal -->
+<div id="frd-house-rules-modal" class="frd-modal-backdrop">
+  <div class="frd-modal-box" style="max-width:480px;">
+    <button class="frd-modal-close" onclick="document.getElementById('frd-house-rules-modal').style.display='none'">×</button>
+    <h3 class="frd-modal-title">Important House Rules</h3>
+    <?php if (!empty($rules)): ?>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px;">
+        <?php foreach ($rules as $rule): ?>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#1e293b;">
+            <span class="material-symbols-outlined" style="font-size:18px;color:#64748b;"><?= htmlspecialchars($rule['icon_class'] ?? 'gavel') ?></span>
+            <?= htmlspecialchars($rule['rule_name']) ?>
+          </div>
+          <span class="frd-rule-badge <?= $rule['is_allowed'] ? 'frd-allowed' : 'frd-not-allowed' ?>">
+            <?= $rule['is_allowed'] ? 'Allowed' : 'Not Allowed' ?>
+          </span>
+        </div>
+        <?php endforeach; ?>
+      </div>
+    <?php else: ?>
+      <p style="color:#64748b;font-size:13px;">Please contact the host for specific house rules.</p>
+    <?php endif; ?>
+    <p class="frd-modal-note">Violation of house rules may result in forfeiture of the security deposit.</p>
+  </div>
+</div>
+
+<!-- 3. Cancellation Policy Modal -->
+<div id="frd-cancel-modal" class="frd-modal-backdrop">
+  <div class="frd-modal-box" style="max-width:460px;">
+    <button class="frd-modal-close" onclick="document.getElementById('frd-cancel-modal').style.display='none'">×</button>
+    <h3 class="frd-modal-title">Cancellation Policy</h3>
+    <ul style="list-style:none;display:flex;flex-direction:column;gap:10px;padding:0;margin:14px 0 0;">
+      <li style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:#334155;"><span style="color:#16a5de;font-size:16px;">✅</span><span><strong>7+ days before check-in:</strong> 100% refund of booking amount.</span></li>
+      <li style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:#334155;"><span style="color:#f59e0b;font-size:16px;">⚠️</span><span><strong>3–7 days before check-in:</strong> 50% refund of booking amount.</span></li>
+      <li style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:#334155;"><span style="color:#e53e3e;font-size:16px;">❌</span><span><strong>Less than 3 days:</strong> No refund.</span></li>
+    </ul>
+    <p class="frd-modal-note">Platform fees (5%) are non-refundable.</p>
+  </div>
+</div>
+
+<!-- ── PAGE-SPECIFIC JS ── -->
+<script>
+// ── CONSTANTS FROM PHP ──
+const FRD_OCCUPIED_DATES  = <?= $occupiedJson ?>;
+const FRD_REQUESTED_DATES = <?= $requestedJson ?>;
+const FRD_RATE_PER_ROOM   = <?= $ratePerRoom ?>;
+const FRD_BED_CAPACITY    = <?= $bedroomCapacity ?>;
+const FRD_MAX_GUESTS      = <?= $maxAllowedGuests ?>;
+const FRD_IS_LOGGED_IN    = <?= $userId ? 'true' : 'false' ?>;
+const FRD_ALL_IMAGES      = <?= json_encode(array_column($images, 'image_url')) ?>;
+
+// ── DESC / ABOUT TOGGLE ──
+function frdToggleClamp(textId, btnId) {
+  const el  = document.getElementById(textId);
+  const btn = document.getElementById(btnId);
+  const clamped = el.classList.toggle('frd-clamped');
+  btn.textContent = clamped ? 'Read more' : 'Read less';
+}
+
+// ── GALLERY ──
+const FRD_IMAGE_PATH = "<?= asset('assets/images/uploads/farmhouses') ?>/";
+let frdGalIdx = 0;
+function frdOpenGallery(idx) {
+  if (!FRD_ALL_IMAGES.length) return;
+  frdGalIdx = idx % FRD_ALL_IMAGES.length;
+  let src = FRD_ALL_IMAGES[frdGalIdx];
+  if (!src.startsWith('http') && !src.startsWith('assets/')) {
+    src = FRD_IMAGE_PATH + src;
+  }
+  document.getElementById('frd-gallery-img').src = src;
+  document.getElementById('frd-gallery-counter').textContent = (frdGalIdx + 1) + ' / ' + FRD_ALL_IMAGES.length;
+  document.getElementById('frd-gallery-overlay').classList.add('frd-open');
+}
+function frdCloseGallery() {
+  document.getElementById('frd-gallery-overlay').classList.remove('frd-open');
+}
+function frdGalleryNav(dir) {
+  frdGalIdx = (frdGalIdx + dir + FRD_ALL_IMAGES.length) % FRD_ALL_IMAGES.length;
+  let src = FRD_ALL_IMAGES[frdGalIdx];
+  if (!src.startsWith('http') && !src.startsWith('assets/')) {
+    src = FRD_IMAGE_PATH + src;
+  }
+  document.getElementById('frd-gallery-img').src = src;
+  document.getElementById('frd-gallery-counter').textContent = (frdGalIdx + 1) + ' / ' + FRD_ALL_IMAGES.length;
+}
+document.getElementById('frd-gallery-overlay').addEventListener('click', function(e){
+  if (e.target === this) frdCloseGallery();
+});
+
+// ── GUESTS & CAPACITY DYNAMICS ──
+let frdBcG = <?= $initGuests ?>;
+
+function frdBcChg(delta) {
+  frdBcG = Math.max(1, Math.min(FRD_MAX_GUESTS, frdBcG + delta));
+  document.getElementById('frd-bc-g').textContent = frdBcG;
+  
+  const fi = document.getElementById('frd-form-guests');
+  if (fi) fi.value = frdBcG;
+  
+  // Calculate rooms required: 1 room per FRD_BED_CAPACITY guests (e.g. 1-2 guests = 1 room, 3-4 = 2 rooms)
+  const roomsRequired = Math.ceil(frdBcG / FRD_BED_CAPACITY);
+  const fr = document.getElementById('frd-form-rooms');
+  if (fr) fr.value = roomsRequired;
+
+  // Update room allocation pill
+  const pill = document.getElementById('frd-room-allocation-pill');
+  if (pill) {
+    pill.textContent = `🛏️ ${roomsRequired} Room${roomsRequired > 1 ? 's' : ''} required (Max ${FRD_BED_CAPACITY} guests/room)`;
+  }
+
+  // Update room count label in breakdown
+  const roomsCountLabel = document.getElementById('frd-bc-rooms-count');
+  if (roomsCountLabel) {
+    roomsCountLabel.textContent = `${roomsRequired} Room${roomsRequired > 1 ? 's' : ''}`;
+  }
+
+  frdRecalcPrice();
+}
+
+// ── PRICE RECALCULATION ──
+function frdRecalcPrice() {
+  const roomsRequired = Math.ceil(frdBcG / FRD_BED_CAPACITY);
+  
+  let nights = 1;
+  if (frdSelStart && frdSelEnd) {
+    nights = Math.max(1, Math.round(Math.abs(frdSelEnd - frdSelStart) / 86400000) + 1);
+  }
+
+  const nightsLabel = document.getElementById('frd-bc-nights-count');
+  if (nightsLabel) {
+    nightsLabel.textContent = `${nights} Night${nights > 1 ? 's' : ''}`;
+  }
+
+  // Base calculation: rooms * ratePerRoom * nights
+  const baseCost = roomsRequired * FRD_RATE_PER_ROOM * nights;
+  const platformFee = Math.round(baseCost * 0.05);
+  const grandTotal = baseCost + platformFee;
+
+  document.getElementById('frd-bc-base').textContent = '₹' + baseCost.toLocaleString('en-IN');
+  
+  const platformFeeEl = document.getElementById('frd-platform-fee-display');
+  if (platformFeeEl) platformFeeEl.textContent = '+ ₹' + platformFee.toLocaleString('en-IN');
+
+  document.getElementById('frd-bc-total').textContent = '₹' + grandTotal.toLocaleString('en-IN');
+
+  const formPriceInput = document.getElementById('frd-form-price');
+  if (formPriceInput) formPriceInput.value = grandTotal;
+
+  // Update modal preview if open
+  const modalTotal = document.getElementById('frd-modal-total-price');
+  if (modalTotal) modalTotal.textContent = '₹' + grandTotal.toLocaleString('en-IN');
+
+  const modalGuestsRooms = document.getElementById('frd-modal-guests-rooms');
+  if (modalGuestsRooms) {
+    modalGuestsRooms.textContent = `${frdBcG} Guest${frdBcG > 1 ? 's' : ''} · ${roomsRequired} Room${roomsRequired > 1 ? 's' : ''} (${nights} night${nights > 1 ? 's' : ''})`;
+  }
+}
+
+// ── CALENDAR LOGIC ──
+const FRD_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const FRD_DOW    = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+const FRD_TODAY  = new Date(); FRD_TODAY.setHours(0,0,0,0);
+
+let frdCalBase  = new Date(FRD_TODAY.getFullYear(), FRD_TODAY.getMonth(), 1);
+let frdSelStart = null, frdSelEnd = null;
+
+function frdDateKey(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
+
+function frdBuildCal() {
+  const wrap = document.getElementById('frd-cal-months-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  for (let m = 0; m < 2; m++) {
+    const d = new Date(frdCalBase.getFullYear(), frdCalBase.getMonth() + m, 1);
+    wrap.appendChild(frdBuildMonth(d));
+    document.getElementById('frd-month' + (m + 1) + '-label').textContent =
+      FRD_MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+  }
+}
+
+function frdBuildMonth(d) {
+  const wrap = document.createElement('div');
+  const grid = document.createElement('div');
+  grid.className = 'frd-cal-grid';
+
+  FRD_DOW.forEach(day => {
+    const h = document.createElement('div');
+    h.className = 'frd-cal-dow';
+    h.textContent = day;
+    grid.appendChild(h);
+  });
+
+  const firstDay = (d.getDay() + 6) % 7;
+  for (let i = 0; i < firstDay; i++) {
+    const e = document.createElement('div');
+    e.className = 'frd-cal-day frd-empty';
+    grid.appendChild(e);
+  }
+
+  const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateObj = new Date(d.getFullYear(), d.getMonth(), day);
+    const key     = frdDateKey(dateObj);
+    const cell    = document.createElement('div');
+    cell.className = 'frd-cal-day';
+    cell.textContent = day;
+
+    const isPast   = dateObj < FRD_TODAY;
+    const isBooked = FRD_OCCUPIED_DATES.includes(key);
+    const isReq    = FRD_REQUESTED_DATES.includes(key);
+
+    if (isPast)        { cell.classList.add('frd-past'); }
+    else if (isBooked) { cell.classList.add('frd-booked'); }
+    else if (isReq)    { cell.classList.add('frd-requested'); }
+    else {
+      const ts = dateObj.getTime();
+      if (frdSelStart && frdSelEnd) {
+        const s = Math.min(frdSelStart, frdSelEnd);
+        const e = Math.max(frdSelStart, frdSelEnd);
+        if      (ts === s && ts === e) cell.classList.add('frd-single-selected');
+        else if (ts === s)             cell.classList.add('frd-range-start');
+        else if (ts === e)             cell.classList.add('frd-range-end');
+        else if (ts > s && ts < e)     cell.classList.add('frd-in-range');
+      } else if (frdSelStart && ts === frdSelStart) {
+        cell.classList.add('frd-single-selected');
+      }
+      cell.addEventListener('click', () => frdPickDay(dateObj));
+    }
+
+    if (dateObj.toDateString() === FRD_TODAY.toDateString() &&
+        !cell.classList.contains('frd-booked') &&
+        !cell.classList.contains('frd-past')) {
+      cell.classList.add('frd-today-mark');
+    }
+
+    grid.appendChild(cell);
+  }
+
+  wrap.appendChild(grid);
+  return wrap;
+}
+
+function frdPickDay(d) {
+  if (!frdSelStart || frdSelEnd) {
+    frdSelStart = d.getTime();
+    frdSelEnd   = null;
+  } else if (d.getTime() >= frdSelStart) {
+    // ── Conflict check ──
+    const rangeStart = new Date(frdSelStart);
+    const rangeEnd   = new Date(d.getTime());
+    let cursor       = new Date(rangeStart);
+    let hasConflict  = false;
+
+    while (cursor <= rangeEnd) {
+      if (FRD_OCCUPIED_DATES.includes(frdDateKey(cursor))) {
+        hasConflict = true;
+        break;
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    if (hasConflict) {
+      alert('Your selected date range includes already booked or blocked dates. Please select alternative dates.');
+      frdSelStart = null;
+      frdSelEnd   = null;
+    } else {
+      frdSelEnd = d.getTime();
+    }
+  } else {
+    frdSelEnd   = frdSelStart;
+    frdSelStart = d.getTime();
+  }
+
+  frdBuildCal();
+  frdUpdateBookingCard();
+}
+
+function frdFmt2(ts) {
+  return new Date(ts).toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'});
+}
+function frdIsoDate(ts) {
+  const d = new Date(ts);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function frdUpdateBookingCard() {
+  if (frdSelStart) {
+    const s = new Date(frdSelStart);
+    document.getElementById('frd-ci-date-label').textContent =
+      s.toLocaleDateString('en-IN', {day:'numeric', month:'short'});
+    document.getElementById('frd-bc-ci').textContent = frdFmt2(frdSelStart) + ' · 08:00 AM';
+    const fi = document.getElementById('frd-form-checkin');
+    if (fi) fi.value = frdIsoDate(frdSelStart);
+  }
+
+  if (frdSelEnd) {
+    const checkoutTs = frdSelEnd + 86400000; // checkout next morning 8 AM
+    const e = new Date(checkoutTs);
+
+    document.getElementById('frd-co-date-label').textContent =
+      e.toLocaleDateString('en-IN', {day:'numeric', month:'short'});
+    document.getElementById('frd-bc-co').textContent = frdFmt2(checkoutTs) + ' · 08:00 AM';
+    const fo = document.getElementById('frd-form-checkout');
+    if (fo) fo.value = frdIsoDate(checkoutTs);
+  }
+
+  frdRecalcPrice();
+}
+
+function frdPrevMonth() { frdCalBase = new Date(frdCalBase.getFullYear(), frdCalBase.getMonth() - 1, 1); frdBuildCal(); }
+function frdNextMonth() { frdCalBase = new Date(frdCalBase.getFullYear(), frdCalBase.getMonth() + 1, 1); frdBuildCal(); }
+
+// ── BOOKING MODAL & QR CODE ACTIONS ──
+function frdOpenBookingModal() {
+  if (!frdSelStart || !frdSelEnd) {
+    alert('Please select your check-in and check-out dates on the calendar first.');
+    const calSection = document.getElementById('frd-cal-section');
+    if (calSection) calSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  if (!document.getElementById('frd-agree-chk').checked) {
+    alert('Please review and check the "I agree to the Important Rules" box before booking.');
+    document.getElementById('frd-agree-chk').focus();
+    return;
+  }
+
+  const roomsRequired = Math.ceil(frdBcG / FRD_BED_CAPACITY);
+  const nights = Math.max(1, Math.round(Math.abs(frdSelEnd - frdSelStart) / 86400000) + 1);
+  const checkoutTs = frdSelEnd + 86400000;
+
+  // Populate summary in modal
+  document.getElementById('frd-modal-stay-dates').textContent = 
+    `${frdFmt2(frdSelStart)} → ${frdFmt2(checkoutTs)} (${nights} Night${nights > 1 ? 's' : ''})`;
+
+  document.getElementById('frd-modal-guests-rooms').textContent = 
+    `${frdBcG} Guest${frdBcG > 1 ? 's' : ''} · ${roomsRequired} Room${roomsRequired > 1 ? 's' : ''} required`;
+
+  document.getElementById('frd-modal-total-price').textContent = 
+    document.getElementById('frd-bc-total').textContent;
+
+  document.getElementById('frd-booking-request-modal').style.display = 'flex';
+}
+
+function frdCloseBookingModal() {
+  document.getElementById('frd-booking-request-modal').style.display = 'none';
+}
+
+function frdCopyUpi(upiVal) {
+  if (!upiVal) return;
+  navigator.clipboard.writeText(upiVal).then(() => {
+    const btn = document.getElementById('frd-copy-upi-btn');
+    if (btn) {
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => {
+        btn.textContent = '📋 Copy';
+      }, 2500);
+    }
+  }).catch(err => {
+    alert('UPI ID: ' + upiVal);
+  });
+}
+
+function frdSubmitBookingModal(form) {
+  const btn = document.getElementById('frd-submit-request-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span>Processing Request...</span> ⏳';
+  }
+  return true;
+}
+
+// ── INITIALIZE ON LOAD ──
+document.addEventListener('DOMContentLoaded', () => {
+  frdBuildCal();
+  frdBcChg(0); // initialize room allocation & pricing
+});
+</script>
+
+<?php include __DIR__ . "/Includes/footer.php"; ?>

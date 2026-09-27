@@ -1,0 +1,33 @@
+# ==================================================
+# FarmLelo Robots.txt - Search Engine Crawl Directives
+# ==================================================
+
+User-agent: *
+Allow: /
+Allow: /assets/
+Allow: /farmhouses
+Allow: /farmhouse_details
+Allow: /about
+Allow: /contact
+Allow: /why-choose-us
+Allow: /list_your_farm
+
+# Disallow administrative, owner and private user routes
+Disallow: /admin/
+Disallow: /owner/
+Disallow: /user/
+Disallow: /database/
+Disallow: /storage/
+Disallow: /vendor/
+Disallow: /app/
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /wishlist
+Disallow: /*?booking=*
+Disallow: /*?booking_error=*
+Disallow: /*?ref=*
+
+# XML Sitemap Location for Google, Bing, Yahoo, Yandex
+Sitemap: https://farmlelo.com/sitemap.xml

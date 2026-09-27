@@ -1,0 +1,2138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stayora - Platform Feature Audit & Capability Matrix</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #0b0f19;
+            --bg-surface: #111827;
+            --bg-card: #1f2937;
+            --bg-card-hover: #263346;
+            --border-subtle: #374151;
+            --border-highlight: #4b5563;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --accent-cyan: #06b6d4;
+            --accent-blue: #3b82f6;
+            --accent-emerald: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+            --accent-purple: #8b5cf6;
+            --status-available-bg: rgba(16, 185, 129, 0.12);
+            --status-available-border: rgba(16, 185, 129, 0.35);
+            --status-available-text: #34d399;
+            --status-partial-bg: rgba(245, 158, 11, 0.12);
+            --status-partial-border: rgba(245, 158, 11, 0.35);
+            --status-partial-text: #fbbf24;
+            --status-missing-bg: rgba(244, 63, 94, 0.12);
+            --status-missing-border: rgba(244, 63, 94, 0.35);
+            --status-missing-text: #fb7185;
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --radius-sm: 6px;
+            --shadow-subtle: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+            --shadow-glow: 0 0 25px -5px rgba(6, 182, 212, 0.25);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            line-height: 1.55;
+            padding: 2.5rem 1.5rem;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        /* ── Header ── */
+        .header {
+            background: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(31, 41, 55, 0.85));
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-subtle);
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 380px;
+            height: 100%;
+            background: radial-gradient(circle at top right, rgba(6, 182, 212, 0.18), transparent 70%);
+            pointer-events: none;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .brand-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(6, 182, 212, 0.15);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            padding: 0.35rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+        }
+
+        .header h1 {
+            font-size: 2.35rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: #ffffff;
+            margin-bottom: 0.4rem;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            max-width: 820px;
+        }
+
+        .meta-tags {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .meta-pill {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .meta-pill strong {
+            color: #ffffff;
+        }
+
+        /* ── KPI Grid ── */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .kpi-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            position: relative;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-highlight);
+        }
+
+        .kpi-title {
+            font-size: 0.82rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-value-row {
+            display: flex;
+            align-items: baseline;
+            gap: 0.6rem;
+        }
+
+        .kpi-number {
+            font-size: 2.25rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1;
+        }
+
+        .kpi-percent {
+            font-size: 0.95rem;
+            font-weight: 700;
+            padding: 0.2rem 0.5rem;
+            border-radius: 999px;
+        }
+
+        .kpi-desc {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            margin-top: 0.6rem;
+        }
+
+        .kpi-available .kpi-number { color: var(--accent-emerald); }
+        .kpi-available .kpi-percent { background: var(--status-available-bg); color: var(--status-available-text); border: 1px solid var(--status-available-border); }
+
+        .kpi-partial .kpi-number { color: var(--accent-amber); }
+        .kpi-partial .kpi-percent { background: var(--status-partial-bg); color: var(--status-partial-text); border: 1px solid var(--status-partial-border); }
+
+        .kpi-missing .kpi-number { color: var(--accent-rose); }
+        .kpi-missing .kpi-percent { background: var(--status-missing-bg); color: var(--status-missing-text); border: 1px solid var(--status-missing-border); }
+
+        .kpi-total .kpi-number { color: var(--accent-cyan); }
+        .kpi-total .kpi-percent { background: rgba(6, 182, 212, 0.12); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); }
+
+        /* ── Progress Bar ── */
+        .overall-progress-bar {
+            background: #1e293b;
+            height: 14px;
+            border-radius: 999px;
+            overflow: hidden;
+            display: flex;
+            margin-top: 1rem;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .progress-segment-available { background: var(--accent-emerald); }
+        .progress-segment-partial { background: var(--accent-amber); }
+        .progress-segment-missing { background: var(--accent-rose); }
+
+        /* ── Module Cards Grid ── */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 2.5rem 0 1.25rem 0;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .section-header h2 {
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .module-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 1.35rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.2s ease;
+        }
+
+        .module-card:hover {
+            border-color: var(--border-highlight);
+            background: var(--bg-card);
+        }
+
+        .module-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .module-id {
+            font-size: 0.72rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-cyan);
+            font-weight: 600;
+            background: rgba(6, 182, 212, 0.1);
+            padding: 0.2rem 0.5rem;
+            border-radius: var(--radius-sm);
+        }
+
+        .module-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-top: 0.35rem;
+        }
+
+        .module-stats-bar {
+            height: 6px;
+            background: #232d3f;
+            border-radius: 999px;
+            overflow: hidden;
+            display: flex;
+            margin: 0.85rem 0;
+        }
+
+        .module-counts {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+
+        .module-badge-row {
+            display: flex;
+            gap: 0.4rem;
+        }
+
+        .m-tag {
+            font-size: 0.72rem;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .m-tag.avail { color: var(--status-available-text); background: var(--status-available-bg); }
+        .m-tag.part { color: var(--status-partial-text); background: var(--status-partial-bg); }
+        .m-tag.miss { color: var(--status-missing-text); background: var(--status-missing-bg); }
+
+        /* ── Controls & Filter Bar ── */
+        .controls-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 1rem;
+            z-index: 50;
+            backdrop-filter: blur(12px);
+            background: rgba(17, 24, 39, 0.92);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 260px;
+        }
+
+        .search-input {
+            width: 100%;
+            background: var(--bg-base);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 0.65rem 1rem 0.65rem 2.4rem;
+            color: #ffffff;
+            font-size: 0.9rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.85rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 0.55rem 0.95rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--border-highlight);
+            color: #ffffff;
+        }
+
+        .filter-btn.active {
+            background: rgba(6, 182, 212, 0.15);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .select-filter {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            font-size: 0.82rem;
+            font-weight: 500;
+            padding: 0.55rem 0.85rem;
+            border-radius: var(--radius-sm);
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* ── Feature Table ── */
+        .table-responsive {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-subtle);
+            margin-bottom: 3rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.88rem;
+        }
+
+        th {
+            background: rgba(31, 41, 55, 0.95);
+            padding: 1rem 1.15rem;
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-subtle);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 1.1rem 1.15rem;
+            border-bottom: 1px solid rgba(55, 65, 81, 0.5);
+            vertical-align: top;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(31, 41, 55, 0.45);
+        }
+
+        .feat-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.76rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .feat-name {
+            font-weight: 700;
+            color: #ffffff;
+            font-size: 0.94rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .feat-desc {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.45;
+        }
+
+        .panel-badge {
+            display: inline-block;
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            white-space: nowrap;
+        }
+
+        .panel-customer { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .panel-admin { background: rgba(139, 92, 246, 0.15); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.3); }
+        .panel-owner { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .panel-system { background: rgba(6, 182, 212, 0.15); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.3); }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.3rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .status-badge.available {
+            background: var(--status-available-bg);
+            color: var(--status-available-text);
+            border: 1px solid var(--status-available-border);
+        }
+
+        .status-badge.partial {
+            background: var(--status-partial-bg);
+            color: var(--status-partial-text);
+            border: 1px solid var(--status-partial-border);
+        }
+
+        .status-badge.missing {
+            background: var(--status-missing-bg);
+            color: var(--status-missing-text);
+            border: 1px solid var(--status-missing-border);
+        }
+
+        .code-pill {
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            background: rgba(0, 0, 0, 0.35);
+            color: #a5f3fc;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            margin: 0.15rem 0.25rem 0.15rem 0;
+            border: 1px solid rgba(6, 182, 212, 0.2);
+        }
+
+        .gap-note {
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            line-height: 1.45;
+        }
+
+        .gap-action {
+            color: var(--accent-rose);
+            font-weight: 600;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.35rem;
+            margin-top: 0.35rem;
+            font-size: 0.8rem;
+        }
+
+        .priority-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .prio-critical { background: rgba(244, 63, 94, 0.2); color: #fda4af; }
+        .prio-high { background: rgba(245, 158, 11, 0.2); color: #fde68a; }
+        .prio-medium { background: rgba(59, 130, 246, 0.2); color: #bfdbfe; }
+        .prio-low { background: rgba(107, 114, 128, 0.2); color: #d1d5db; }
+
+        /* ── Database Gap Section ── */
+        .db-gap-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .db-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+        }
+
+        .db-box h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .db-table-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .db-table-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 0.75rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .db-table-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #ffffff;
+        }
+
+        .db-col-count {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* ── Roadmap Section ── */
+        .roadmap-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .roadmap-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 1.75rem;
+            position: relative;
+        }
+
+        .phase-badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            padding: 0.25rem 0.7rem;
+            border-radius: 999px;
+            margin-bottom: 0.75rem;
+        }
+
+        .p1 { background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .p2 { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); border: 1px solid rgba(59, 130, 246, 0.3); }
+        .p3 { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); border: 1px solid rgba(139, 92, 246, 0.3); }
+
+        .roadmap-card h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+
+        .roadmap-list {
+            list-style: none;
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+
+        .roadmap-list li {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .roadmap-list li strong {
+            color: #ffffff;
+        }
+
+        /* ── Footer ── */
+        .footer {
+            border-top: 1px solid var(--border-subtle);
+            padding-top: 2rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 1rem; }
+            .header { padding: 1.5rem; }
+            .header h1 { font-size: 1.75rem; }
+            .controls-card { position: static; }
+        }
+
+        @media print {
+            body { background: #ffffff; color: #000000; padding: 0; }
+            .controls-card, .footer { display: none; }
+            .header, .kpi-card, .module-card, .table-responsive, .db-box, .roadmap-card {
+                border: 1px solid #ccc !important;
+                background: #fff !important;
+                color: #000 !important;
+                box-shadow: none !important;
+            }
+            .header h1, .module-title, .feat-name, .db-box h3, .roadmap-card h3 { color: #000 !important; }
+            .feat-desc, .gap-note, .kpi-desc { color: #444 !important; }
+            table th { background: #eee !important; color: #000 !important; }
+            td { border-bottom: 1px solid #ddd !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- ── Header ── -->
+    <header class="header">
+        <div class="header-top">
+            <div>
+                <div class="brand-badge">STAYORA MARKETPLACE ENGINE</div>
+                <h1>System Capabilities & Feature Gap Audit</h1>
+                <p>Comprehensive architectural comparison between Stayora's current code base (PHP MVC + MySQL) and the 60-point multi-property marketplace specification.</p>
+            </div>
+            <div class="meta-tags">
+                <div class="meta-pill">Target Project: <strong>Stayora / Farmlelo</strong></div>
+                <div class="meta-pill">Audit Date: <strong>September 2026</strong></div>
+                <div class="meta-pill">Database: <strong>stayora (30 Tables)</strong></div>
+            </div>
+        </div>
+
+        <div style="margin-top: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">
+                <span>Platform Overall Implementation Progress</span>
+                <span id="overallPercentLabel">90% Functional Completeness</span>
+            </div>
+            <div class="overall-progress-bar">
+                <div class="progress-segment-available" style="width: 88.2%;" title="Available / Fully Working (88.2%)"></div>
+                <div class="progress-segment-partial" style="width: 3.5%;" title="Partially Implemented (3.5%)"></div>
+                <div class="progress-segment-missing" style="width: 8.2%;" title="Missing / Not in Project (8.2%)"></div>
+            </div>
+            <div style="display: flex; gap: 1.5rem; margin-top: 0.6rem; font-size: 0.78rem; color: var(--text-secondary);">
+                <span><strong style="color: var(--accent-emerald);">●</strong> Available: 75 Features</span>
+                <span><strong style="color: var(--accent-amber);">●</strong> Partially Implemented: 3 Features</span>
+                <span><strong style="color: var(--accent-rose);">●</strong> Missing / Pending: 7 Features</span>
+                <span><strong>Total Audited: 85 Features</strong></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ── KPI Highlights ── -->
+    <div class="kpi-grid">
+        <div class="kpi-card kpi-total">
+            <div class="kpi-title">Total Features Analyzed</div>
+            <div class="kpi-value-row">
+                <div class="kpi-number">85</div>
+                <div class="kpi-percent">100%</div>
+            </div>
+            <div class="kpi-desc">Across 15 core architectural modules and 4 panels</div>
+        </div>
+
+        <div class="kpi-card kpi-available">
+            <div class="kpi-title">Currently Available</div>
+            <div class="kpi-value-row">
+                <div class="kpi-number" id="kpiAvailNum">75</div>
+                <div class="kpi-percent" id="kpiAvailPct">88.2%</div>
+            </div>
+            <div class="kpi-desc">Ready, tested, and fully functional in existing code</div>
+        </div>
+
+        <div class="kpi-card kpi-partial">
+            <div class="kpi-title">Partially Available</div>
+            <div class="kpi-value-row">
+                <div class="kpi-number" id="kpiPartNum">3</div>
+                <div class="kpi-percent" id="kpiPartPct">3.5%</div>
+            </div>
+            <div class="kpi-desc">Basic flow exists, needs advanced edge cases & validation</div>
+        </div>
+
+        <div class="kpi-card kpi-missing">
+            <div class="kpi-title">Missing / Not In Project</div>
+            <div class="kpi-value-row">
+                <div class="kpi-number" id="kpiMissNum">7</div>
+                <div class="kpi-percent" id="kpiMissPct">8.2%</div>
+            </div>
+            <div class="kpi-desc">Requires new database tables, routes, and controllers</div>
+        </div>
+    </div>
+
+    <!-- ── 15 Core Modules Summary ── -->
+    <div class="section-header">
+        <h2>15 Core Architecture Modules Breakdown</h2>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Quick status scan by functional area</span>
+    </div>
+
+    <div class="modules-grid" id="modulesGridContainer">
+        <!-- Rendered dynamically via JS for live accurate sync -->
+    </div>
+
+    <!-- ── Interactive Filter Controls ── -->
+    <div class="controls-card">
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" class="search-input" placeholder="Search feature by name, file, table, or keyword...">
+        </div>
+
+        <div class="filter-group">
+            <button class="filter-btn active" data-filter="all">All (85)</button>
+            <button class="filter-btn" data-filter="available">Available (75)</button>
+            <button class="filter-btn" data-filter="partial">Partial (3)</button>
+            <button class="filter-btn" data-filter="missing">Missing (7)</button>
+        </div>
+
+        <div class="filter-group">
+            <select id="moduleSelect" class="select-filter">
+                <option value="all">All Modules (15)</option>
+                <option value="M1">M1: Auth & Users</option>
+                <option value="M2">M2: Property Management</option>
+                <option value="M3">M3: Room/Unit Management</option>
+                <option value="M4">M4: Amenities & Rules</option>
+                <option value="M5">M5: Pricing Engine</option>
+                <option value="M6">M6: Availability & Calendar</option>
+                <option value="M7">M7: Booking Engine</option>
+                <option value="M8">M8: Payment & Verification</option>
+                <option value="M9">M9: Owner Management</option>
+                <option value="M10">M10: Inquiries & Leads</option>
+                <option value="M11">M11: Reviews & Social Proof</option>
+                <option value="M12">M12: Notifications</option>
+                <option value="M13">M13: Reports & Analytics</option>
+                <option value="M14">M14: CMS & SEO</option>
+                <option value="M15">M15: Admin Roles & Access</option>
+            </select>
+
+            <select id="panelSelect" class="select-filter">
+                <option value="all">All Panels</option>
+                <option value="Customer">Customer Web</option>
+                <option value="Owner">Owner Panel</option>
+                <option value="Admin">Admin Panel</option>
+                <option value="System">System/Engine</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- ── Detailed Audit Table ── -->
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 70px;">ID</th>
+                    <th style="width: 260px;">Feature Name & Description</th>
+                    <th style="width: 140px;">Module / Panel</th>
+                    <th style="width: 130px;">Status</th>
+                    <th style="width: 250px;">Current Implementation In Codebase</th>
+                    <th>Technical Gap / Implementation Needed</th>
+                    <th style="width: 90px;">Priority</th>
+                </tr>
+            </thead>
+            <tbody id="featuresTableBody">
+                <!-- Dynamically populated rows -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ── Database Architecture Comparison ── -->
+    <div class="section-header">
+        <h2>Database Architecture & Schema Gap Analysis</h2>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Current Active Tables vs Recommended Architecture</span>
+    </div>
+
+    <div class="db-gap-grid">
+        <div class="db-box">
+            <h3 style="color: var(--accent-emerald);">
+                <span>✓</span> Existing Active Tables (23 Tables)
+            </h3>
+            <ul class="db-table-list">
+                <li class="db-table-item"><span class="db-table-name">farmhouses</span> <span class="db-col-count">30 cols • Master stay profile (weekend_price, security_deposit, cleaning_fee, discounts)</span></li>
+                <li class="db-table-item"><span class="db-table-name">property_types</span> <span class="db-col-count">8 cols • Dynamic property categories & icons (Admin CRUD)</span></li>
+                <li class="db-table-item"><span class="db-table-name">farmhouse_room_types</span> <span class="db-col-count">12 cols • Room pricing, capacity, weekend_price, image_url</span></li>
+                <li class="db-table-item"><span class="db-table-name">booking_requests</span> <span class="db-col-count">28 cols • Weekend nights, deposits, addon charges, coupons, platform fees</span></li>
+                <li class="db-table-item"><span class="db-table-name">coupons</span> <span class="db-col-count">13 cols • Promo discount vouchers & admin management desk</span></li>
+                <li class="db-table-item"><span class="db-table-name">seasonal_prices</span> <span class="db-col-count">9 cols • Festive & seasonal date range surge tariffs</span></li>
+                <li class="db-table-item"><span class="db-table-name">property_addons</span> <span class="db-col-count">9 cols • Bonfire, BBQ, Extra Bed, Cook addon services</span></li>
+                <li class="db-table-item"><span class="db-table-name">blocked_dates</span> <span class="db-col-count">7 cols • Admin/Owner lock dates</span></li>
+                <li class="db-table-item"><span class="db-table-name">amenities & farmhouse_amenities</span> <span class="db-col-count">Room-specific & property amenities with Material icons</span></li>
+                <li class="db-table-item"><span class="db-table-name">rule_presets & farmhouse_rules</span> <span class="db-col-count">Rules presets & toggles</span></li>
+                <li class="db-table-item"><span class="db-table-name">users & owners & admins</span> <span class="db-col-count">Separate credential tables (OAuth google_id)</span></li>
+                <li class="db-table-item"><span class="db-table-name">otp_verifications</span> <span class="db-col-count">14 cols • Phone & Email 6-digit OTPs</span></li>
+                <li class="db-table-item"><span class="db-table-name">inquiries & contact_inquiries</span> <span class="db-col-count">Lead & WhatsApp click logs</span></li>
+                <li class="db-table-item"><span class="db-table-name">wishlist</span> <span class="db-col-count">3 cols • Saved farmhouses</span></li>
+                <li class="db-table-item"><span class="db-table-name">site_settings & settings</span> <span class="db-col-count">Brand, Bank, QR Code, SEO</span></li>
+                <li class="db-table-item"><span class="db-table-name">images</span> <span class="db-col-count">8 cols • Categorized property & room-specific images (room_type_id)</span></li>
+                <li class="db-table-item"><span class="db-table-name">payments</span> <span class="db-col-count">13 cols • UTR, payment proof, status, verification notes</span></li>
+                <li class="db-table-item"><span class="db-table-name">owner_documents</span> <span class="db-col-count">10 cols • Host KYC, PAN, Aadhaar, Registry, Electricity bill</span></li>
+                <li class="db-table-item"><span class="db-table-name">owner_offline_bookings</span> <span class="db-col-count">17 cols • Direct walk-in guests, tariffs, calendar sync</span></li>
+                <li class="db-table-item"><span class="db-table-name">owner_payouts</span> <span class="db-col-count">11 cols • Gross earnings, 10% commission, net payout ledger</span></li>
+                <li class="db-table-item"><span class="db-table-name">reviews</span> <span class="db-col-count">16 cols • Multi-criteria ratings (Cleanliness, Location, Value, Hospitality)</span></li>
+                <li class="db-table-item"><span class="db-table-name">notifications</span> <span class="db-col-count">9 cols • In-app alert center for Customer, Host & Admin</span></li>
+                <li class="db-table-item"><span class="db-table-name">notification_logs</span> <span class="db-col-count">8 cols • Email, WhatsApp & SMS delivery audit trail</span></li>
+            </ul>
+        </div>
+
+        <div class="db-box">
+            <h3 style="color: var(--accent-rose);">
+                <span>✕</span> Missing Tables Needed for Full Spec (2 Tables)
+            </h3>
+            <ul class="db-table-list">
+                <li class="db-table-item"><span class="db-table-name">reviews</span> <span class="db-col-count">Guest ratings (5 criteria: cleanliness, hospitality, etc.)</span></li>
+                <li class="db-table-item"><span class="db-table-name">payments & payment_proofs</span> <span class="db-col-count">UTR, transaction ID, screenshot file, verified_by</span></li>
+                <li class="db-table-item"><span class="db-table-name">offline_bookings</span> <span class="db-col-count">Direct phone/walk-in guest records with payment track</span></li>
+                <li class="db-table-item"><span class="db-table-name">owner_documents</span> <span class="db-col-count">Aadhaar/PAN/Electricity bill/Authorization verification</span></li>
+                <li class="db-table-item"><span class="db-table-name">notifications</span> <span class="db-col-count">In-app notifications for users, owners, and admins</span></li>
+                <li class="db-table-item"><span class="db-table-name">roles, permissions, role_permissions</span> <span class="db-col-count">RBAC for Property, Booking & Finance managers</span></li>
+                <li class="db-table-item"><span class="db-table-name">owner_payouts & earnings</span> <span class="db-col-count">Owner financial ledger & commission balance</span></li>
+                <li class="db-table-item"><span class="db-table-name">cms_pages, faqs, blogs</span> <span class="db-col-count">Dynamic page builder and content management</span></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ── Phase-Wise Recommended Roadmap ── -->
+    <div class="section-header">
+        <h2>Strategic Implementation Roadmap</h2>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Step-by-step roadmap to achieve 100% marketplace capability</span>
+    </div>
+
+    <div class="roadmap-grid">
+        <div class="roadmap-card">
+            <span class="phase-badge p1">Phase 1 • Core MVP Hardening (1-2 Weeks)</span>
+            <h3>Booking & Payment Completeness</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">Fill critical gaps in the existing checkout and verification workflow.</p>
+            <ul class="roadmap-list">
+                <li><span>✔</span> <div><strong>In-App Payment Proof Upload:</strong> Add UTR / Transaction ID input and screenshot upload directly in the booking modal instead of forcing WhatsApp.</div></li>
+                <li><span>✔</span> <div><strong>Separate Payment Status:</strong> Add <code>payment_status</code> ('unpaid','partial','paid','refunded') to <code>booking_requests</code>.</div></li>
+                <li><span>✔</span> <div><strong>15-Minute Booking Hold:</strong> Prevent simultaneous bookings with automated hold expiry timestamp.</div></li>
+                <li><span>✔</span> <div><strong>PDF Booking Voucher:</strong> Auto-generate booking confirmation PDF with QR code and check-in directions.</div></li>
+                <li><span>✔</span> <div><strong>Offline Booking Ledger:</strong> Form for owners/admins to record phone bookings with guest details.</div></li>
+            </ul>
+        </div>
+
+        <div class="roadmap-card">
+            <span class="phase-badge p2">Phase 2 • Marketplace Growth (2-3 Weeks)</span>
+            <h3>Trust, Pricing & Owner Power</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">Empower owners and build customer confidence.</p>
+            <ul class="roadmap-list">
+                <li><span>★</span> <div><strong>Guest Reviews & Ratings:</strong> Post-checkout verified reviews with 5 rating stars and admin moderation.</div></li>
+                <li><span>★</span> <div><strong>Dynamic Pricing Engine:</strong> Weekend multipliers (Friday/Saturday) and custom holiday dates.</div></li>
+                <li><span>★</span> <div><strong>Owner Inquiry Inbox:</strong> Allow owners to view and respond to leads for their own properties.</div></li>
+                <li><span>★</span> <div><strong>Owner Financials & Earnings:</strong> Earnings tab with net payout calculation and commission tracking.</div></li>
+                <li><span>★</span> <div><strong>Coupon Engine:</strong> Welcome coupons and percentage discounts with minimum booking totals.</div></li>
+            </ul>
+        </div>
+
+        <div class="roadmap-card">
+            <span class="phase-badge p3">Phase 3 • Enterprise Scale (Post Launch)</span>
+            <h3>Automation & Operations</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">Enterprise features for multi-city scaling across India.</p>
+            <ul class="roadmap-list">
+                <li><span>⚡</span> <div><strong>Online Payment Gateway:</strong> Razorpay / Cashfree integration for instant automated confirmation.</div></li>
+                <li><span>⚡</span> <div><strong>Automated WhatsApp Notifications:</strong> Interakt / Gupshup WhatsApp API triggers on booking events.</div></li>
+                <li><span>⚡</span> <div><strong>Multi-Admin RBAC:</strong> Role permissions for Finance Admin, Property Manager, Support Team.</div></li>
+                <li><span>⚡</span> <div><strong>Dynamic CMS & Blog:</strong> Admin managed destinations guide, travel blogs, and local SEO pages.</div></li>
+                <li><span>⚡</span> <div><strong>Mobile App (React Native / Flutter):</strong> Dedicated Host app and Guest app.</div></li>
+            </ul>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>Stayora Multi-Property Marketplace Platform Audit • Generated on September 26, 2026 • Storage Document: <code>c:\xampp\htdocs\Stayora\storage\feature_audit_report.html</code></p>
+    </footer>
+
+</div>
+
+<!-- ── Dataset & Interactive Logic ── -->
+<script>
+const featuresData = [
+    {
+        "id": "F01",
+        "name": "Customer Registration with OTP",
+        "module": "M1",
+        "moduleName": "Authentication & Users",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "AuthController.php, register.php, otp_verifications table, Users table (is_phone_verified, is_email_verified)",
+        "gap": "Fully working with 6-digit secure OTP verification via SMS/Email.",
+        "priority": "critical"
+    },
+    {
+        "id": "F02",
+        "name": "Customer Login (Email/Phone & Password)",
+        "module": "M1",
+        "moduleName": "Authentication & Users",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "AuthController.php, login.php, remember-me token handling",
+        "gap": "Supports both email and phone login, session preservation.",
+        "priority": "critical"
+    },
+    {
+        "id": "F03",
+        "name": "Forgot Password Dual Verification (SMS + Email)",
+        "module": "M1",
+        "moduleName": "Authentication & Users",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "ForgotPasswordController.php, forgot-password.php, reset-password.php, PHPMailer service",
+        "gap": "Complete dual-factor OTP reset workflow implemented.",
+        "priority": "high"
+    },
+    {
+        "id": "F04",
+        "name": "Social Login (Google / Facebook OAuth)",
+        "module": "M1",
+        "moduleName": "Authentication & Users",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "AuthController::googleAuth, AuthController::googleCallback, UserModel::findOrCreateGoogleUser, users.google_id",
+        "gap": "Fully implemented with Google OAuth 2.0 & Google One-Tap integration on login & register.",
+        "priority": "medium"
+    },
+    {
+        "id": "F05",
+        "name": "Customer Profile & Phone Number Change with OTP",
+        "module": "M1",
+        "moduleName": "Authentication & Users",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "User/ProfileController.php, profile.php, verify-phone-otp route",
+        "gap": "Allows user profile updates and validates phone number modifications with OTP.",
+        "priority": "high"
+    },
+    {
+        "id": "F06",
+        "name": "Dynamic Property Types System",
+        "module": "M2",
+        "moduleName": "Property Management",
+        "panel": "System",
+        "status": "available",
+        "implemented": "property_types table, PropertyTypeModel.php, PropertyTypeController.php, admin/property_types.php, add/edit farm selects",
+        "gap": "Complete dynamic categorization with Material icons, status toggle, slug generation, and property assignment.",
+        "priority": "high"
+    },
+    {
+        "id": "F07",
+        "name": "Comprehensive Property Profile & Specifications",
+        "module": "M2",
+        "moduleName": "Property Management",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "farmhouses table (title, description, address, google_map_link, bedrooms, day/night capacity, contact_phone, whatsapp)",
+        "gap": "Rich metadata supported. Google Maps pin and WhatsApp direct links present.",
+        "priority": "critical"
+    },
+    {
+        "id": "F08",
+        "name": "Categorized Image Gallery (Exterior, Pool, Bedrooms, Kitchen)",
+        "module": "M2",
+        "moduleName": "Property Management",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "images (category, caption, is_featured, sort_order), FarmdetailModel::getFarmhouseImages, categorized gallery filter tabs on farmhouse_details.php",
+        "gap": "Categorized photo tabs (All, Exterior, Pool, Bedrooms, Living, Kitchen) with live count pills and interactive modal preview.",
+        "priority": "medium"
+    },
+    {
+        "id": "F09",
+        "name": "Owner Property Listing Submission & Workflow",
+        "module": "M2",
+        "moduleName": "Property Management",
+        "panel": "Owner",
+        "status": "available",
+        "implemented": "OwnerFarmhouseController.php, add.php, edit.php, `admin_approval_status` enum",
+        "gap": "Owner can list properties with full details; status defaults to pending review.",
+        "priority": "critical"
+    },
+    {
+        "id": "F10",
+        "name": "Admin Property Verification & Approval Workflow",
+        "module": "M2",
+        "moduleName": "Property Management",
+        "panel": "Admin",
+        "status": "available",
+        "implemented": "Admin/FarmhouseController.php, manage_farmhouses.php, approve/reject/suspend actions",
+        "gap": "Admin can inspect dossiers, toggle active/inactive status and approve listings.",
+        "priority": "critical"
+    },
+    {
+        "id": "F11",
+        "name": "Verified Property Trust Badge",
+        "module": "M2",
+        "moduleName": "Property Management",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "farmhouses (is_verified, verification_notes), FarmdetailModel::getFarmhouseById, trust badge on property cards and detail page",
+        "gap": "Verified badge with host vetting status, verification criteria, and security confidence indicator.",
+        "priority": "low"
+    },
+    {
+        "id": "F12",
+        "name": "Independent Room Types & Pricing Structure",
+        "module": "M3",
+        "moduleName": "Room/Unit Management",
+        "panel": "System",
+        "status": "available",
+        "implemented": "`farmhouse_room_types` table (room_type_name, total_rooms, price_per_room, capacity_per_room, description, status)",
+        "gap": "Fully structured in schema and integrated in Admin/Owner property editors.",
+        "priority": "critical"
+    },
+    {
+        "id": "F13",
+        "name": "Room-Wise Independent Photo Galleries",
+        "module": "M3",
+        "moduleName": "Room/Unit Management",
+        "panel": "Owner",
+        "status": "available",
+        "implemented": "images.room_type_id foreign key, FarmdetailModel::getRoomImages(), farmhouse_details.php (#frd-room-gallery-modal, frdOpenRoomGallery lightbox & thumb carousel)",
+        "gap": "Independent multi-photo galleries per room category with interactive modal viewer and thumbnail navigation.",
+        "priority": "medium"
+    },
+    {
+        "id": "F14",
+        "name": "Room-Specific Amenities Assignment",
+        "module": "M3",
+        "moduleName": "Room/Unit Management",
+        "panel": "Admin",
+        "status": "available",
+        "implemented": "farmhouse_amenities.room_type_id column, FarmdetailModel::getRoomAmenities(), farmhouse_details.php room feature tags with Material symbols",
+        "gap": "Granular amenities assigned directly to specific room types and prominently displayed on room category cards.",
+        "priority": "medium"
+    },
+    {
+        "id": "F15",
+        "name": "Multi-Room Quantity Selector in Booking Widget",
+        "module": "M3",
+        "moduleName": "Room/Unit Management",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "farmhouse_details.php (modal room selector dropdown, dynamic price calculation per night)",
+        "gap": "Supports room count, remaining inventory check, and capacity validation.",
+        "priority": "high"
+    },
+    {
+        "id": "F16",
+        "name": "Dynamic Amenities Management System",
+        "module": "M4",
+        "moduleName": "Amenities & Rules",
+        "panel": "Admin",
+        "status": "available",
+        "implemented": "AmenityController.php, manage_amenities.php, add_amenity.php, amenities table",
+        "gap": "Admin can create amenities with categories (general, kitchen, bedroom, bathroom) and Google Material icons.",
+        "priority": "high"
+    },
+    {
+        "id": "F17",
+        "name": "House Rules Preset Catalog & Property Rules Assignment",
+        "module": "M4",
+        "moduleName": "Amenities & Rules",
+        "panel": "Admin",
+        "status": "available",
+        "implemented": "PropertyRuleController.php, rule_presets table, farmhouse_rules table",
+        "gap": "Preset rules (Pets, Music after 10 PM, Smoking, Alcohol) with allowed/forbidden status.",
+        "priority": "high"
+    },
+    {
+        "id": "F18",
+        "name": "Visual Rules Display on Property Detail",
+        "module": "M4",
+        "moduleName": "Amenities & Rules",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "farmhouse_details.php (House Rules section with green checks and red cross icons)",
+        "gap": "Interactive and clearly laid out for guests.",
+        "priority": "medium"
+    },
+    {
+        "id": "F19",
+        "name": "Base Property & Room Price Calculation",
+        "module": "M5",
+        "moduleName": "Pricing Engine",
+        "panel": "System",
+        "status": "available",
+        "implemented": "FarmdetailsController.php, FarmdetailModel.php (nights * rooms * price)",
+        "gap": "Accurately computes subtotal for single and multi-night stays.",
+        "priority": "critical"
+    },
+    {
+        "id": "F20",
+        "name": "Weekend Dynamic Tariff (Fri/Sat/Sun Multipliers)",
+        "module": "M5",
+        "moduleName": "Pricing Engine",
+        "panel": "System",
+        "status": "available",
+        "implemented": "farmhouses.weekend_price, farmhouse_room_types.weekend_price, FarmdetailModel::calculateQuote day-by-day tariff logic, farmhouse_details.php frdRecalcPrice",
+        "gap": "Dynamic weekend tariff engine automatically applies Fri/Sat/Sun rates with visual badges and transparent itemization.",
+        "priority": "high"
+    },
+    {
+        "id": "F21",
+        "name": "Seasonal / Festival Surge Pricing (Diwali, New Year)",
+        "module": "M5",
+        "moduleName": "Pricing Engine",
+        "panel": "System",
+        "status": "available",
+        "implemented": "seasonal_prices table, FarmdetailModel::getSeasonalPrices & calculateQuote date matching, farmhouse_details.php festive surge badge and pricing",
+        "gap": "Custom seasonal date windows (Diwali, New Year, Long weekends) with custom tariffs and surge multipliers.",
+        "priority": "medium"
+    },
+    {
+        "id": "F22",
+        "name": "Long-Stay & Weekly Discounts",
+        "module": "M5",
+        "moduleName": "Pricing Engine",
+        "panel": "System",
+        "status": "available",
+        "implemented": "farmhouses.weekly_discount_percent & monthly_discount_percent, FarmdetailModel::calculateQuote, farmhouse_details.php extended stay discount line item",
+        "gap": "Automatic tiered discounts (weekly 7+ nights, monthly 28+ nights) dynamically deducted in booking quote.",
+        "priority": "low"
+    },
+    {
+        "id": "F23",
+        "name": "Security Deposit Management & Separate Line Item",
+        "module": "M5",
+        "moduleName": "Pricing Engine",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "farmhouses.security_deposit, booking_requests.security_deposit, FarmdetailModel::createBookingRequest, farmhouse_details.php refundable deposit line item",
+        "gap": "Refundable security deposit managed as an isolated line item with transparent checkout disclosure.",
+        "priority": "high"
+    },
+    {
+        "id": "F24",
+        "name": "Additional Charges (Cleaning, Extra Bed, Bonfire, BBQ)",
+        "module": "M5",
+        "moduleName": "Pricing Engine",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "property_addons table, FarmdetailModel::getPropertyAddons, booking_requests.addon_charges & addons_selected, farmhouse_details.php interactive addon selector",
+        "gap": "Guest can select optional property addons (Bonfire, Barbecue Grill, Extra Mattress, Cook) with flat/per-night calculation.",
+        "priority": "medium"
+    },
+    {
+        "id": "F25",
+        "name": "Marketplace Platform Fee Architecture (Zero Fee Initial)",
+        "module": "M5",
+        "moduleName": "Pricing Engine",
+        "panel": "System",
+        "status": "available",
+        "implemented": "booking_requests.platform_fee & owner_amount columns, FarmdetailModel::calculateQuote, FarmdetailModel::createBookingRequest, 0% platform fee badge",
+        "gap": "Transparent zero-fee platform architecture with automated financial ledger split between Stayora and owner payout.",
+        "priority": "medium"
+    },
+    {
+        "id": "F26",
+        "name": "Interactive Front-End Availability Calendar",
+        "module": "M6",
+        "moduleName": "Availability & Calendar",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "farmhouse_details.php (Custom JS Calendar with month navigation and booked/blocked dates)",
+        "gap": "Visual, responsive, and updates based on backend occupied dates.",
+        "priority": "critical"
+    },
+    {
+        "id": "F27",
+        "name": "Admin Blocked Dates Management",
+        "module": "M6",
+        "moduleName": "Availability & Calendar",
+        "panel": "Admin",
+        "status": "available",
+        "implemented": "BookingRequestController::blockedDates, lockDate, unlockDate, blocked_dates table",
+        "gap": "Admin can lock date ranges with reasons (Maintenance, Offline booking, etc.).",
+        "priority": "critical"
+    },
+    {
+        "id": "F28",
+        "name": "Owner Personal Date Blocking (Personal Use / WhatsApp Booking)",
+        "module": "M6",
+        "moduleName": "Availability & Calendar",
+        "panel": "Owner",
+        "status": "available",
+        "implemented": "OwnerBlockedDatesController.php, owner/blocked-dates.php",
+        "gap": "Owner can block their own farmhouse dates; automatically locks public booking calendar.",
+        "priority": "critical"
+    },
+    {
+        "id": "F29",
+        "name": "Room-Wise Granular Calendar Grid",
+        "module": "M6",
+        "moduleName": "Availability & Calendar",
+        "panel": "System",
+        "status": "available",
+        "implemented": "FarmdetailModel::getRoomAvailabilityCalendarMatrix, api/room-calendar-matrix endpoint, farmhouse_details.php interactive room grid & live badges",
+        "gap": "Visual room-by-room calendar matrix renders daily units available per room category with live status.",
+        "priority": "high"
+    },
+    {
+        "id": "F30",
+        "name": "Complete Entire Property Booking Mode",
+        "module": "M7",
+        "moduleName": "Booking Engine",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "FarmdetailsController::request_booking, booking_requests (`booking_type` = 'complete')",
+        "gap": "Fully functional. Checks entire property night capacity and existing bookings.",
+        "priority": "critical"
+    },
+    {
+        "id": "F31",
+        "name": "Room-Wise Booking Mode (Capacity & Room Selection)",
+        "module": "M7",
+        "moduleName": "Booking Engine",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "FarmdetailsController::request_booking, booking_requests (`booking_type` = 'per_room')",
+        "gap": "Verifies room inventory, max guests per room, and prevents room over-allocation.",
+        "priority": "critical"
+    },
+    {
+        "id": "F32",
+        "name": "Complete Property vs Room Booking Conflict Matrix",
+        "module": "M7",
+        "moduleName": "Booking Engine",
+        "panel": "System",
+        "status": "available",
+        "implemented": "FarmdetailModel::checkBookingConflict, getOccupiedDates, FarmdetailsController::request_booking",
+        "gap": "Strict mutual exclusion: If any room is booked, Entire Property is blocked; if Entire Property is booked, all individual rooms are locked.",
+        "priority": "critical"
+    },
+    {
+        "id": "F33",
+        "name": "Double Booking Database-Level Locking (Concurrency Protection)",
+        "module": "M7",
+        "moduleName": "Booking Engine",
+        "panel": "System",
+        "status": "available",
+        "implemented": "FarmdetailModel::createBookingRequest with MySQL InnoDB transaction + SELECT ... FOR UPDATE pessimistic row-level lock",
+        "gap": "Eliminates race conditions and prevents simultaneous conflicting bookings during concurrent checkouts.",
+        "priority": "critical"
+    },
+    {
+        "id": "F34",
+        "name": "15-Minute Temporary Inventory Hold Timer",
+        "module": "M7",
+        "moduleName": "Booking Engine",
+        "panel": "System",
+        "status": "available",
+        "implemented": "FarmdetailModel::releaseExpiredHolds, `hold_expires_at` column, auto-expiration filter in getOccupiedDates & calendar availability",
+        "gap": "Locks inventory for 15 minutes upon submission; releases held inventory automatically if unconfirmed.",
+        "priority": "high"
+    },
+    {
+        "id": "F35",
+        "name": "Instant Booking vs Request to Book Mode Toggle",
+        "module": "M7",
+        "moduleName": "Booking Engine",
+        "panel": "Admin",
+        "status": "available",
+        "implemented": "`farmhouses.booking_mode` ENUM('request','instant'), add_farm.php, edit_farmhouse.php, FarmdetailModel auto-approval on instant mode",
+        "gap": "Admins/hosts configure Instant Confirmation vs Request-to-Book per property with frontend badges and automated approval.",
+        "priority": "medium"
+    },
+    {
+        "id": "F36",
+        "name": "Official UPI Payment QR Code & UPI ID Display",
+        "module": "M8",
+        "moduleName": "Payment & Verification",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "site_settings table, Admin Settings Controller, farmhouse_details.php modal",
+        "gap": "Admin can upload company/platform UPI QR code and guests see it in booking modal.",
+        "priority": "critical"
+    },
+    {
+        "id": "F37",
+        "name": "Bank Transfer Details Display (IFSC, Account, Name)",
+        "module": "M8",
+        "moduleName": "Payment & Verification",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "site_settings table, Admin Settings, available in booking instructions",
+        "gap": "Fully editable by Admin in settings dashboard.",
+        "priority": "high"
+    },
+    {
+        "id": "F38",
+        "name": "In-App Payment Method Selector (Pay at Property / UPI / Bank)",
+        "module": "M8",
+        "moduleName": "Payment & Verification",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "farmhouse_details.php modal with interactive 3-card selector (UPI QR, Direct Bank Transfer, Pay at Property)",
+        "gap": "Dynamic card selector with live conditional instructions and payment proof fields.",
+        "priority": "high"
+    },
+    {
+        "id": "F39",
+        "name": "In-App Payment Proof Upload (UTR Number + Screenshot)",
+        "module": "M8",
+        "moduleName": "Payment & Verification",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "farmhouse_details.php modal, FarmdetailsController::request_booking, FarmdetailModel, payments table",
+        "gap": "Guests input UTR number and upload payment proof screenshot; saved in assets/images/uploads/payments and ledger.",
+        "priority": "critical"
+    },
+    {
+        "id": "F40",
+        "name": "Separate Booking Status vs Payment Status Architecture",
+        "module": "M8",
+        "moduleName": "Payment & Verification",
+        "panel": "System",
+        "status": "available",
+        "implemented": "booking_requests (status vs payment_status), payments table, booking voucher reconciliation",
+        "gap": "Dual status architecture separating reservation lifecycle from financial verification.",
+        "priority": "critical"
+    },
+    {
+        "id": "F41",
+        "name": "Admin Payment Verification & Proof Inspection Desk",
+        "module": "M8",
+        "moduleName": "Payment & Verification",
+        "panel": "Admin",
+        "status": "available",
+        "implemented": "Admin/PaymentController.php, admin/payments.php, admin_header.php link",
+        "gap": "Admin verification desk with screenshot lightbox, UTR audit, Verify & Mark Paid or Reject actions.",
+        "priority": "critical"
+    },
+    {
+        "id": "F42",
+        "name": "Owner Self-Registration & Account Setup",
+        "module": "M9",
+        "moduleName": "Owner Management",
+        "panel": "Owner",
+        "status": "available",
+        "implemented": "AuthController::ownerRegisterView, ownerRegister, owner_view_register.php, owners table",
+        "gap": "Working with email/phone verification and login credentials.",
+        "priority": "critical"
+    },
+    {
+        "id": "F43",
+        "name": "Owner Dashboard & Quick Metrics",
+        "module": "M9",
+        "moduleName": "Owner Management",
+        "panel": "Owner",
+        "status": "available",
+        "implemented": "OwnerDashboardController.php, owner/dashboard.php",
+        "gap": "Displays property portfolio count, live bookings, pending requests.",
+        "priority": "high"
+    },
+    {
+        "id": "F44",
+        "name": "Owner KYC & Property Ownership Document Upload",
+        "module": "M9",
+        "moduleName": "Owner Management",
+        "panel": "Owner",
+        "status": "available",
+        "implemented": "OwnerKycController.php, owner/kyc.php, owner_documents table, owner_header.php",
+        "gap": "Hosts upload PAN, Aadhaar, Sale Deed / 7-12, and Electricity bills with verification status tracking.",
+        "priority": "high"
+    },
+    {
+        "id": "F45",
+        "name": "Owner Booking Management & Status Updates",
+        "module": "M9",
+        "moduleName": "Owner Management",
+        "panel": "Owner",
+        "status": "available",
+        "implemented": "OwnerBookingController.php, owner/bookings.php",
+        "gap": "Owner can view booking dossier and approve/reject guest reservations.",
+        "priority": "critical"
+    },
+    {
+        "id": "F46",
+        "name": "Owner Offline Booking Records & Guest Dossiers",
+        "module": "M9",
+        "moduleName": "Owner Management",
+        "panel": "Owner",
+        "status": "available",
+        "implemented": "OwnerOfflineBookingController.php, owner/offline_bookings.php, owner_offline_bookings table, auto date-lock sync",
+        "gap": "Direct walk-in reservation entry with customer dossier, advance accounting, and automated calendar blocking.",
+        "priority": "high"
+    },
+    {
+        "id": "F47",
+        "name": "Owner Earnings, Commission & Payouts Ledger",
+        "module": "M9",
+        "moduleName": "Owner Management",
+        "panel": "Owner",
+        "status": "available",
+        "implemented": "OwnerEarningsController.php, owner/earnings.php, owner_payouts table, owner_header.php",
+        "gap": "Real-time revenue accounting, transparent 10% commission deductions, net payables, and withdrawal request workflow.",
+        "priority": "high"
+    },
+    {
+        "id": "F48",
+        "name": "Property Click-to-Call & WhatsApp Lead Tracking",
+        "module": "M10",
+        "moduleName": "Inquiries & Leads",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "FarmdetailsController::logInquiry (AJAX), `inquiries` table",
+        "gap": "Tracks when customers click to call or WhatsApp about a farmhouse.",
+        "priority": "high"
+    },
+    {
+        "id": "F49",
+        "name": "General Contact Us Inquiries",
+        "module": "M10",
+        "moduleName": "Inquiries & Leads",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "StaticController::submitContact, contact_inquiries table, ContactInquiriesController.php",
+        "gap": "Admin can view, search, and delete general customer inquiries.",
+        "priority": "medium"
+    },
+    {
+        "id": "F50",
+        "name": "Inquiry Status Pipeline (New, Contacted, Converted, Closed)",
+        "module": "M10",
+        "moduleName": "Inquiries & Leads",
+        "panel": "Admin",
+        "status": "available",
+        "implemented": "InquiriesController.php, InquiriesModel.php, inquiries.php, status pipeline with follow-up notes & due dates",
+        "gap": "Interactive status pipeline (New -> Contacted -> Converted -> Closed) with follow-up notes tracking.",
+        "priority": "medium"
+    },
+    {
+        "id": "F51",
+        "name": "Owner Access to Farmhouse Customer Inquiries",
+        "module": "M10",
+        "moduleName": "Inquiries & Leads",
+        "panel": "Owner",
+        "status": "available",
+        "implemented": "OwnerInquiriesController.php, owner/inquiries.php, routes.php, direct Click-to-Call & WhatsApp buttons, owner notes",
+        "gap": "Owners have full visibility of inquiries for their properties with status and notes management.",
+        "priority": "high"
+    },
+    {
+        "id": "F52",
+        "name": "Verified Customer Review & Star Rating Submission",
+        "module": "M11",
+        "moduleName": "Reviews & Social Proof",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "reviews table, ReviewModel.php, FarmdetailsController::submitReview, farmhouse_details.php review modal",
+        "gap": "Verified guests submit detailed testimonials with headline, verified stay badge, and instant moderation queuing.",
+        "priority": "high"
+    },
+    {
+        "id": "F53",
+        "name": "Multi-Criteria Rating (Cleanliness, Location, Value, Hospitality)",
+        "module": "M11",
+        "moduleName": "Reviews & Social Proof",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "reviews table (cleanliness, location, value, hospitality), ReviewModel::getReviewSummary, farmhouse_details.php progress bars",
+        "gap": "Calculates and visualizes 4 core stay criteria breakdown with overall aggregate star average.",
+        "priority": "medium"
+    },
+    {
+        "id": "F54",
+        "name": "Admin Review Moderation & Approval Desk",
+        "module": "M11",
+        "moduleName": "Reviews & Social Proof",
+        "panel": "Admin",
+        "status": "available",
+        "implemented": "ReviewController.php, admin/reviews.php, routes.php, approve/reject/delete actions with criteria preview",
+        "gap": "Admin moderation desk with batch overview, criteria inspection, and instant status moderation.",
+        "priority": "medium"
+    },
+    {
+        "id": "F55",
+        "name": "Customer Personal Wishlist (Save & Unsave)",
+        "module": "M11",
+        "moduleName": "Reviews & Social Proof",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "WishlistController.php, WishlistModel.php, wishlist.php, `wishlist` table",
+        "gap": "AJAX heart button toggle on cards, personal wishlist page for returning users.",
+        "priority": "medium"
+    },
+    {
+        "id": "F56",
+        "name": "In-App Notification Center (Bell Icon & History)",
+        "module": "M12",
+        "moduleName": "Notifications",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "notifications table, NotificationService.php, NotificationController.php, notifications.php, bell icons with unread counters in headers",
+        "gap": "Persistent notification inbox with real-time unread badges, mark-read API, and interactive center.",
+        "priority": "medium"
+    },
+    {
+        "id": "F57",
+        "name": "Automated Email Notifications on Booking Events",
+        "module": "M12",
+        "moduleName": "Notifications",
+        "panel": "System",
+        "status": "available",
+        "implemented": "MailNotificationService.php, notification_logs table, booking received, approved, and payment verified HTML emails",
+        "gap": "Automated event-driven transactional email alerts for guests and owners.",
+        "priority": "high"
+    },
+    {
+        "id": "F58",
+        "name": "Automated WhatsApp & SMS Notifications Gateway",
+        "module": "M12",
+        "moduleName": "Notifications",
+        "panel": "System",
+        "status": "available",
+        "implemented": "WhatsAppGatewayService.php, notification_logs table, 1-click wa.me confirmation & receipt generator, webhook API dispatch",
+        "gap": "Automated WhatsApp/SMS dispatch and 1-click pre-filled WhatsApp action triggers for booking vouchers and payment receipts.",
+        "priority": "high"
+    },
+    {
+        "id": "F59",
+        "name": "CSV / Excel Data Export for Admins",
+        "module": "M13",
+        "moduleName": "Reports & Analytics",
+        "panel": "Admin",
+        "status": "available",
+        "implemented": "FarmhouseController::exportProperties, BookingRequestController::exportBookings, OwnerController::exportOwners, UserController::exportUsers",
+        "gap": "Complete CSV export with filtered queries implemented across all tables.",
+        "priority": "high"
+    },
+    {
+        "id": "F60",
+        "name": "Dedicated Business Intelligence & Revenue Reports",
+        "module": "M13",
+        "moduleName": "Reports & Analytics",
+        "panel": "Admin",
+        "status": "partial",
+        "implemented": "BookingRequestModel::getBookingStats computes total/pending/approved revenue",
+        "gap": "Needs dedicated Reports tab (/admin/reports) with Date Range, Gross Value, Tax, and Owner Payout breakdown.",
+        "priority": "high"
+    },
+    {
+        "id": "F61",
+        "name": "Occupancy Rate & Property Performance Analytics",
+        "module": "M13",
+        "moduleName": "Reports & Analytics",
+        "panel": "Admin",
+        "status": "missing",
+        "implemented": "None",
+        "gap": "Requires calculations: Available Days vs Booked Days vs Blocked Days per farmhouse.",
+        "priority": "medium"
+    },
+    {
+        "id": "F62",
+        "name": "Visual Charts & Graphs (Monthly Booking Trends)",
+        "module": "M13",
+        "moduleName": "Reports & Analytics",
+        "panel": "Admin",
+        "status": "missing",
+        "implemented": "Only static summary stat cards on dashboard",
+        "gap": "Requires Chart.js or ApexCharts for monthly booking trends and revenue trajectories.",
+        "priority": "medium"
+    },
+    {
+        "id": "F63",
+        "name": "SEO Engine (Dynamic Sitemaps, Robots.txt, Meta Tags)",
+        "module": "M14",
+        "moduleName": "CMS & SEO",
+        "panel": "System",
+        "status": "available",
+        "implemented": "SeoController.php (sitemap.xml, robots.txt), SeoHelper.php (OpenGraph, canonical, keywords)",
+        "gap": "Fully dynamic sitemap crawling active farmhouses and canonical link generator.",
+        "priority": "high"
+    },
+    {
+        "id": "F64",
+        "name": "SEO-Friendly Slugs for Properties",
+        "module": "M14",
+        "moduleName": "CMS & SEO",
+        "panel": "Customer",
+        "status": "partial",
+        "implemented": "URL uses encrypted parameter: `farmhouse_details?id=ENCRYPTED_KEY`",
+        "gap": "Should support readable slugs like `/farmhouse/green-valley-resort-ratlam` for Google ranking.",
+        "priority": "medium"
+    },
+    {
+        "id": "F65",
+        "name": "Informational Legal Pages (Terms, Privacy, Cancellation, Cookies)",
+        "module": "M14",
+        "moduleName": "CMS & SEO",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "StaticController, terms_conditions.php, privacy.php, cancellation_policy.php, cookie_policy.php",
+        "gap": "Comprehensive, professionally written legal and cancellation policies.",
+        "priority": "high"
+    },
+    {
+        "id": "F66",
+        "name": "Dynamic CMS Page Builder & Blog System",
+        "module": "M14",
+        "moduleName": "CMS & SEO",
+        "panel": "Admin",
+        "status": "missing",
+        "implemented": "Static view files only",
+        "gap": "Requires `pages` and `blogs` tables so Admin can write destination guides from dashboard.",
+        "priority": "low"
+    },
+    {
+        "id": "F67",
+        "name": "Property-Specific Cancellation Policy Selection",
+        "module": "M14",
+        "moduleName": "CMS & SEO",
+        "panel": "Admin",
+        "status": "partial",
+        "implemented": "Global cancellation policy page exists",
+        "gap": "Needs dropdown per property (Flexible, Moderate, Strict) stored in `farmhouses`.",
+        "priority": "medium"
+    },
+    {
+        "id": "F68",
+        "name": "Multiple Admin Accounts",
+        "module": "M15",
+        "moduleName": "Admin Roles & Access",
+        "panel": "Admin",
+        "status": "available",
+        "implemented": "admins table (supports multiple admin logins, password hashing, session tokens)",
+        "gap": "Database supports multiple admins; active sessions tracked.",
+        "priority": "critical"
+    },
+    {
+        "id": "F69",
+        "name": "Role-Based Access Control (RBAC: Super Admin, Finance, Support)",
+        "module": "M15",
+        "moduleName": "Admin Roles & Access",
+        "panel": "Admin",
+        "status": "missing",
+        "implemented": "Single `AuthMiddleware::adminOnly()` check for all admin routes",
+        "gap": "Requires `roles`, `permissions`, and `role_permissions` tables for granular sub-admin access.",
+        "priority": "high"
+    },
+    {
+        "id": "F70",
+        "name": "Site-Wide Global Settings Hub",
+        "module": "M15",
+        "moduleName": "Admin Roles & Access",
+        "panel": "Admin",
+        "status": "available",
+        "implemented": "SettingsController.php, settings.php, site_settings table",
+        "gap": "Admin can update Logo, Brand Name, UPI QR, Bank, Socials, Contacts, and SEO verification.",
+        "priority": "critical"
+    },
+    {
+        "id": "F71",
+        "name": "Single Active Device Session Enforcement (Admins)",
+        "module": "M15",
+        "moduleName": "Admin Roles & Access",
+        "panel": "Admin",
+        "status": "available",
+        "implemented": "`admins.active_session_id` column and middleware session verification",
+        "gap": "Prevents concurrent unauthorized admin logins.",
+        "priority": "medium"
+    },
+    {
+        "id": "F72",
+        "name": "Customer Dashboard & Booking Management",
+        "module": "M1",
+        "moduleName": "Authentication & Users",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "User/DashboardController.php, MyBookingsController.php, user_dashboard.php",
+        "gap": "Tabs for upcoming, past, pending bookings; cancel request action.",
+        "priority": "critical"
+    },
+    {
+        "id": "F73",
+        "name": "Downloadable PDF Confirmation & Invoices",
+        "module": "M7",
+        "moduleName": "Booking Engine",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "FarmdetailsController::bookingVoucher, booking_voucher.php printable tax invoice & stay dossier with auto-print PDF layout",
+        "gap": "Comprehensive printable booking confirmation voucher & tax invoice with reference ID, pricing breakdown, and QR verification.",
+        "priority": "high"
+    },
+    {
+        "id": "F74",
+        "name": "Promotional Coupons & Discount Codes System",
+        "module": "M5",
+        "moduleName": "Pricing Engine",
+        "panel": "System",
+        "status": "available",
+        "implemented": "coupons table, CouponModel.php, CouponController.php, admin/coupons desk, api/validate-coupon endpoint, farmhouse_details.php coupon voucher input",
+        "gap": "Full admin coupon management (flat/percentage, max limit, usage counter, date validity) with real-time checkout validation & discount deduction.",
+        "priority": "medium"
+    },
+    {
+        "id": "F75",
+        "name": "Search Filters by Amenities & Location",
+        "module": "M2",
+        "moduleName": "Property Management",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "FarmhousesController.php, farmhouses.php",
+        "gap": "Filter by city/location, guest capacity, price ordering, and property type.",
+        "priority": "critical"
+    },
+    {
+        "id": "F76",
+        "name": "Property FAQs Accordion",
+        "module": "M14",
+        "moduleName": "CMS & SEO",
+        "panel": "Customer",
+        "status": "missing",
+        "implemented": "None on property detail view",
+        "gap": "FAQ accordion on farmhouse detail page addressing common guest questions.",
+        "priority": "low"
+    },
+    {
+        "id": "F77",
+        "name": "Similar Properties Recommendations",
+        "module": "M2",
+        "moduleName": "Property Management",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "FarmdetailModel::getSimilarFarmhouses, FarmdetailsController.php, similar stays grid on farmhouse_details.php",
+        "gap": "Intelligent recommendation engine matching stays by location and property category with ratings and direct links.",
+        "priority": "low"
+    },
+    {
+        "id": "F78",
+        "name": "Check-in & Check-out Time Customization per Property",
+        "module": "M2",
+        "moduleName": "Property Management",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "booking_requests (check_in_time, check_out_time), admin and owner edit views",
+        "gap": "Properly stored and displayed on booking dossier.",
+        "priority": "high"
+    },
+    {
+        "id": "F79",
+        "name": "Admin User Management Desk (Status Toggle & Online Detection)",
+        "module": "M1",
+        "moduleName": "Authentication & Users",
+        "panel": "Admin",
+        "status": "available",
+        "implemented": "Admin/UserController.php, users.php, `is_logged_in` flag, last_login timestamp",
+        "gap": "Admin can view all registered users, block/unblock accounts, export users.",
+        "priority": "high"
+    },
+    {
+        "id": "F80",
+        "name": "Admin Owner Management Desk (Approve & Audit)",
+        "module": "M9",
+        "moduleName": "Owner Management",
+        "panel": "Admin",
+        "status": "available",
+        "implemented": "Admin/OwnerController.php, owners.php, status toggle, export",
+        "gap": "Admin can manage all partner owners, suspend accounts, and view assigned properties.",
+        "priority": "critical"
+    },
+    {
+        "id": "F81",
+        "name": "Guest Count Validation vs Day & Night Capacity",
+        "module": "M7",
+        "moduleName": "Booking Engine",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "FarmdetailsController::request_booking ($nightCapacity checks)",
+        "gap": "Rejects request if guest count exceeds max permitted capacity.",
+        "priority": "critical"
+    },
+    {
+        "id": "F82",
+        "name": "Prevent Duplicate Booking Requests by Same User",
+        "module": "M7",
+        "moduleName": "Booking Engine",
+        "panel": "System",
+        "status": "available",
+        "implemented": "FarmdetailModel::hasDuplicatePendingRequest",
+        "gap": "Prevents spamming duplicate requests for the same date window.",
+        "priority": "high"
+    },
+    {
+        "id": "F83",
+        "name": "Custom Negotiable Price Inquiry Indicator",
+        "module": "M5",
+        "moduleName": "Pricing Engine",
+        "panel": "Customer",
+        "status": "available",
+        "implemented": "`farmhouses.is_negotiable` flag, displayed on property card and details",
+        "gap": "Flags properties open to event / long stay price negotiation.",
+        "priority": "medium"
+    },
+    {
+        "id": "F84",
+        "name": "Multi-Admin UI Creator & Role Assignment",
+        "module": "M15",
+        "moduleName": "Admin Roles & Access",
+        "panel": "Admin",
+        "status": "missing",
+        "implemented": "None (New admins currently created manually in database)",
+        "gap": "Admin panel needs a 'Create Admin' form with password hashing and privilege assignment.",
+        "priority": "medium"
+    },
+    {
+        "id": "F85",
+        "name": "Audit Trail & System Activity Logging",
+        "module": "M15",
+        "moduleName": "Admin Roles & Access",
+        "panel": "System",
+        "status": "missing",
+        "implemented": "None",
+        "gap": "Requires `audit_logs` table tracking admin approvals, price changes, and date blocks.",
+        "priority": "low"
+    }
+];
+
+// ── Render Dynamic Components ──
+function initAuditReport() {
+    renderKPIs();
+    renderModuleCards();
+    renderFeaturesTable(featuresData);
+    setupFilters();
+}
+
+function renderKPIs() {
+    const total = featuresData.length;
+    let avail = 0, part = 0, miss = 0;
+    featuresData.forEach(f => {
+        if (f.status === 'available') avail++;
+        else if (f.status === 'partial') part++;
+        else if (f.status === 'missing') miss++;
+    });
+
+    const availPct = (avail / total) * 100;
+    const partPct = (part / total) * 100;
+    const missPct = (miss / total) * 100;
+    const score = Math.round(((avail + (part * 0.5)) / total) * 100);
+
+    const overallLabel = document.getElementById('overallPercentLabel');
+    if (overallLabel) overallLabel.textContent = `${score}% Functional Completeness`;
+
+    const availSeg = document.querySelector('.overall-progress-bar .progress-segment-available');
+    if (availSeg) {
+        availSeg.style.width = `${availPct.toFixed(1)}%`;
+        availSeg.title = `Available / Fully Working (${availPct.toFixed(1)}%)`;
+    }
+    const partSeg = document.querySelector('.overall-progress-bar .progress-segment-partial');
+    if (partSeg) {
+        partSeg.style.width = `${partPct.toFixed(1)}%`;
+        partSeg.title = `Partially Implemented (${partPct.toFixed(1)}%)`;
+    }
+    const missSeg = document.querySelector('.overall-progress-bar .progress-segment-missing');
+    if (missSeg) {
+        missSeg.style.width = `${missPct.toFixed(1)}%`;
+        missSeg.title = `Missing / Not in Project (${missPct.toFixed(1)}%)`;
+    }
+
+    const availNum = document.getElementById('kpiAvailNum');
+    if (availNum) availNum.textContent = avail;
+    const availPctEl = document.getElementById('kpiAvailPct');
+    if (availPctEl) availPctEl.textContent = `${availPct.toFixed(1)}%`;
+
+    const partNum = document.getElementById('kpiPartNum');
+    if (partNum) partNum.textContent = part;
+    const partPctEl = document.getElementById('kpiPartPct');
+    if (partPctEl) partPctEl.textContent = `${partPct.toFixed(1)}%`;
+
+    const missNum = document.getElementById('kpiMissNum');
+    if (missNum) missNum.textContent = miss;
+    const missPctEl = document.getElementById('kpiMissPct');
+    if (missPctEl) missPctEl.textContent = `${missPct.toFixed(1)}%`;
+
+    // Sync filter button labels
+    const btnAll = document.querySelector('.filter-btn[data-filter="all"]');
+    if (btnAll) btnAll.textContent = `All (${total})`;
+    const btnAvail = document.querySelector('.filter-btn[data-filter="available"]');
+    if (btnAvail) btnAvail.textContent = `Available (${avail})`;
+    const btnPart = document.querySelector('.filter-btn[data-filter="partial"]');
+    if (btnPart) btnPart.textContent = `Partial (${part})`;
+    const btnMiss = document.querySelector('.filter-btn[data-filter="missing"]');
+    if (btnMiss) btnMiss.textContent = `Missing (${miss})`;
+}
+
+function renderModuleCards() {
+    const modulesMap = {};
+    featuresData.forEach(f => {
+        if (!modulesMap[f.module]) {
+            modulesMap[f.module] = {
+                id: f.module,
+                name: f.moduleName,
+                total: 0,
+                available: 0,
+                partial: 0,
+                missing: 0
+            };
+        }
+        modulesMap[f.module].total++;
+        if (f.status === 'available') modulesMap[f.module].available++;
+        if (f.status === 'partial') modulesMap[f.module].partial++;
+        if (f.status === 'missing') modulesMap[f.module].missing++;
+    });
+
+    const container = document.getElementById('modulesGridContainer');
+    container.innerHTML = Object.values(modulesMap).map(m => {
+        const availPct = Math.round((m.available / m.total) * 100);
+        const partPct = Math.round((m.partial / m.total) * 100);
+        const missPct = 100 - availPct - partPct;
+        const score = Math.round(((m.available + (m.partial * 0.5)) / m.total) * 100);
+
+        return `
+            <div class="module-card">
+                <div>
+                    <div class="module-header">
+                        <span class="module-id">${m.id}</span>
+                        <div class="module-badge-row">
+                            <span class="m-tag avail" title="Available">✓ ${m.available}</span>
+                            <span class="m-tag part" title="Partial">⚠️ ${m.partial}</span>
+                            <span class="m-tag miss" title="Missing">✕ ${m.missing}</span>
+                        </div>
+                    </div>
+                    <div class="module-title">${m.name}</div>
+                </div>
+
+                <div>
+                    <div class="module-stats-bar">
+                        <div class="progress-segment-available" style="width: ${availPct}%"></div>
+                        <div class="progress-segment-partial" style="width: ${partPct}%"></div>
+                        <div class="progress-segment-missing" style="width: ${missPct}%"></div>
+                    </div>
+                    <div class="module-counts">
+                        <span>${m.total} Features Total</span>
+                        <strong style="color: ${score >= 70 ? 'var(--accent-emerald)' : score >= 40 ? 'var(--accent-amber)' : 'var(--accent-rose)'};">${score}% Complete</strong>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderFeaturesTable(items) {
+    const tbody = document.getElementById('featuresTableBody');
+    if (items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 3rem; color: var(--text-muted);">No features found matching the selected filter criteria.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = items.map(f => {
+        const statusClass = f.status === 'available' ? 'available' : f.status === 'partial' ? 'partial' : 'missing';
+        const statusLabel = f.status === 'available' ? '✓ Available' : f.status === 'partial' ? '⚠️ Partial' : '✕ Missing';
+        const panelClass = f.panel === 'Customer' ? 'panel-customer' : f.panel === 'Admin' ? 'panel-admin' : f.panel === 'Owner' ? 'panel-owner' : 'panel-system';
+        const prioClass = f.priority === 'critical' ? 'prio-critical' : f.priority === 'high' ? 'prio-high' : f.priority === 'medium' ? 'prio-medium' : 'prio-low';
+
+        return `
+            <tr data-status="${f.status}" data-module="${f.module}" data-panel="${f.panel}">
+                <td class="feat-id">${f.id}</td>
+                <td>
+                    <div class="feat-name">${escapeHtml(f.name)}</div>
+                    <div class="feat-desc">${f.moduleName}</div>
+                </td>
+                <td>
+                    <span class="panel-badge ${panelClass}">${f.panel}</span>
+                    <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem;">${f.module}</div>
+                </td>
+                <td>
+                    <span class="status-badge ${statusClass}">${statusLabel}</span>
+                </td>
+                <td>
+                    <div style="font-size: 0.8rem; color: var(--text-primary);">
+                        ${f.implemented !== 'None' ? `<span class="code-pill">${escapeHtml(f.implemented)}</span>` : '<span style="color: var(--text-muted); font-style: italic;">Not implemented in codebase</span>'}
+                    </div>
+                </td>
+                <td>
+                    <div class="gap-note">${escapeHtml(f.gap)}</div>
+                </td>
+                <td>
+                    <span class="priority-badge ${prioClass}">${f.priority}</span>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+    });
+}
+
+function setupFilters() {
+    const searchInput = document.getElementById('searchInput');
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const moduleSelect = document.getElementById('moduleSelect');
+    const panelSelect = document.getElementById('panelSelect');
+
+    let activeStatusFilter = 'all';
+
+    function applyAllFilters() {
+        const query = searchInput.value.toLowerCase().trim();
+        const selectedModule = moduleSelect.value;
+        const selectedPanel = panelSelect.value;
+
+        const filtered = featuresData.filter(f => {
+            const matchesStatus = (activeStatusFilter === 'all') || (f.status === activeStatusFilter);
+            const matchesModule = (selectedModule === 'all') || (f.module === selectedModule);
+            const matchesPanel = (selectedPanel === 'all') || (f.panel === selectedPanel);
+            const matchesQuery = !query || 
+                f.name.toLowerCase().includes(query) || 
+                f.moduleName.toLowerCase().includes(query) || 
+                f.implemented.toLowerCase().includes(query) || 
+                f.gap.toLowerCase().includes(query);
+
+            return matchesStatus && matchesModule && matchesPanel && matchesQuery;
+        });
+
+        renderFeaturesTable(filtered);
+    }
+
+    searchInput.addEventListener('input', applyAllFilters);
+    moduleSelect.addEventListener('change', applyAllFilters);
+    panelSelect.addEventListener('change', applyAllFilters);
+
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeStatusFilter = btn.getAttribute('data-filter');
+            applyAllFilters();
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', initAuditReport);
+</script>
+
+</body>
+</html>
